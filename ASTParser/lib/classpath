@@ -1,0 +1,23 @@
+#!/bin/sh
+
+BASEDIR='/Applications/eclipse/plugins'
+JARS='
+org.eclipse.core.contenttype_
+org.eclipse.core.jobs_
+org.eclipse.core.resources_
+org.eclipse.core.runtime_
+org.eclipse.equinox.common_
+org.eclipse.equinox.preferences_
+org.eclipse.jdt.core_
+org.eclipse.osgi_
+'
+CLASSPATH=""
+
+for i in ${JARS}; do
+    files=${BASEDIR}/${i}*
+    for file in $files; do
+	cp $file .
+    done
+done
+
+echo $CLASSPATH
