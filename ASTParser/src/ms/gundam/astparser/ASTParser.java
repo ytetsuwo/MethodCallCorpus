@@ -162,56 +162,114 @@ public class ASTParser {
 		
 	}
 
+	@SuppressWarnings("unchecked")
 	public void addSuperConstructorInvocation(SuperConstructorInvocation statement, ATTRIBUTE attribute) {
-		// TODO Auto-generated method stub
-		
+		Expression exp = statement.getExpression();
+		if (exp != null) {
+			addExpression(exp, attribute);
+			tokenlist.add(new AttributedToken(new Miscellaneous("."), attribute, tokenlist.size()));
+		}
+		tokenlist.add(new AttributedToken(new Keyword("super"), attribute, tokenlist.size()));
+		tokenlist.add(new AttributedToken(new Miscellaneous("("), attribute, tokenlist.size()));
+		List<Expression> arglist = statement.arguments();
+		if (arglist != null && !arglist.isEmpty()) {
+			addExpression(arglist.get(0), attribute);
+			for (int i = 1; i < arglist.size(); i++) {
+				tokenlist.add(new AttributedToken(new Miscellaneous(","), attribute, tokenlist.size()));
+				addExpression(arglist.get(i), attribute);
+			}
+		}
+		tokenlist.add(new AttributedToken(new Miscellaneous(")"), attribute, tokenlist.size()));
+		tokenlist.add(new AttributedToken(new SemiColon(";"), attribute, tokenlist.size()));
 	}
 
 	public void addReturnStatement(ReturnStatement statement, ATTRIBUTE attribute) {
-		// TODO Auto-generated method stub
-		
+		tokenlist.add(new AttributedToken(new Keyword("return"), attribute, tokenlist.size()));
+		Expression exp = statement.getExpression();
+		if (exp != null) {
+			addExpression(exp, attribute);
+		}
+		tokenlist.add(new AttributedToken(new SemiColon(";"), attribute, tokenlist.size()));
 	}
 
 	public void addLabeledStatement(LabeledStatement statement, ATTRIBUTE attribute) {
-		// TODO Auto-generated method stub
-		
+		addSimpleName(statement.getLabel(), attribute);
+		tokenlist.add(new AttributedToken(new Miscellaneous(":"), attribute, tokenlist.size()));
+		addStatement(statement.getBody(), attribute);
 	}
 
 	public void addIfStatement(IfStatement statement, ATTRIBUTE attribute) {
-		// TODO Auto-generated method stub
-		
+		tokenlist.add(new AttributedToken(new Keyword("if"), attribute, tokenlist.size()));
+		tokenlist.add(new AttributedToken(new Miscellaneous("("), attribute, tokenlist.size()));
+		addExpression(statement.getExpression(), attribute);
+		tokenlist.add(new AttributedToken(new Miscellaneous(")"), attribute, tokenlist.size()));
+		addStatement(statement.getThenStatement(), attribute);
+		Statement elsestatement = statement.getElseStatement();
+		if (elsestatement != null) {
+			tokenlist.add(new AttributedToken(new Keyword("else"), attribute, tokenlist.size()));
+			addStatement(elsestatement, attribute);
+		}
 	}
 
+	@SuppressWarnings("unchecked")
 	public void addForStatement(ForStatement statement, ATTRIBUTE attribute) {
-		// TODO Auto-generated method stub
-		
+		tokenlist.add(new AttributedToken(new Keyword("for"), attribute, tokenlist.size()));
+		tokenlist.add(new AttributedToken(new Miscellaneous("("), attribute, tokenlist.size()));
+		List<Expression> forinit = statement.initializers();
+		if (forinit != null && !forinit.isEmpty()) {
+			addExpression(forinit.get(0), attribute);
+			for (int i = 1; i < forinit.size(); i++) {
+				tokenlist.add(new AttributedToken(new Miscellaneous(","), attribute, tokenlist.size()));
+				addExpression(forinit.get(i), attribute);
+			}
+		}
+		tokenlist.add(new AttributedToken(new SemiColon(";"), attribute, tokenlist.size()));
+		Expression exp = statement.getExpression();
+		if (exp != null) {
+			addExpression(exp, attribute);
+		}
+		tokenlist.add(new AttributedToken(new SemiColon(";"), attribute, tokenlist.size()));
+		List<Expression> forupdate = statement.updaters();
+		if (forupdate != null && !forupdate.isEmpty()) {
+			addExpression(forupdate.get(0), attribute);
+			for (int i = 1; i < forupdate.size(); i++) {
+				tokenlist.add(new AttributedToken(new Miscellaneous(","), attribute, tokenlist.size()));
+				addExpression(forupdate.get(i), attribute);
+			}
+		}
+		tokenlist.add(new AttributedToken(new Miscellaneous(")"), attribute, tokenlist.size()));
+		addStatement(statement.getBody(), attribute);
 	}
 
-	public void addExpressionStatement(ExpressionStatement statement,
-			ATTRIBUTE attribute) {
-		// TODO Auto-generated method stub
-		
+	public void addExpressionStatement(ExpressionStatement statement, ATTRIBUTE attribute) {
+		addExpression(statement.getExpression(), attribute);
+		tokenlist.add(new AttributedToken(new SemiColon(";"), attribute, tokenlist.size()));
 	}
 
 	public void addEmptyStatement(EmptyStatement statement, ATTRIBUTE attribute) {
-		// TODO Auto-generated method stub
-		
+		tokenlist.add(new AttributedToken(new SemiColon(";"), attribute, tokenlist.size()));
 	}
 
-	public void addDoStatement(DoStatement statement, ATTRIBUTE attributeute) {
-		// TODO Auto-generated method stub
-		
+	public void addDoStatement(DoStatement statement, ATTRIBUTE attribute) {
+		tokenlist.add(new AttributedToken(new Keyword("do"), attribute, tokenlist.size()));
+		addStatement(statement.getBody(), attribute);
+		tokenlist.add(new AttributedToken(new Keyword("while"), attribute, tokenlist.size()));
+		tokenlist.add(new AttributedToken(new Miscellaneous("("), attribute, tokenlist.size()));
+		addExpression(statement.getExpression(), attribute);
+		tokenlist.add(new AttributedToken(new Miscellaneous(")"), attribute, tokenlist.size()));
+		tokenlist.add(new AttributedToken(new SemiColon(";"), attribute, tokenlist.size()));
 	}
 
 	public void addContinueStatement(ContinueStatement statement, ATTRIBUTE attribute) {
-		// TODO Auto-generated method stub
-		
+		tokenlist.add(new AttributedToken(new Keyword("continue"), attribute, tokenlist.size()));
+		addSimpleName(statement.getLabel(), attribute);
+		tokenlist.add(new AttributedToken(new SemiColon(";"), attribute, tokenlist.size()));
 	}
 
 	@SuppressWarnings("unchecked")
 	public void addConstructorInvocation(ConstructorInvocation statement, ATTRIBUTE attribute) {
 		List<Type> typelist = statement.typeArguments();
-		if (!typelist.isEmpty()) {
+		if (typelist != null && !typelist.isEmpty()) {
 			addType(typelist.get(0), attribute);
 			for (int i = 1; i < typelist.size(); i++) {
 				tokenlist.add(new AttributedToken(new Miscellaneous(","), attribute, tokenlist.size()));
@@ -221,7 +279,7 @@ public class ASTParser {
 		tokenlist.add(new AttributedToken(new Keyword("this"), attribute, tokenlist.size()));
 		tokenlist.add(new AttributedToken(new Miscellaneous("("), attribute, tokenlist.size()));
 		List<Expression> expressionlist = statement.arguments();
-		if (!expressionlist.isEmpty()) {
+		if (expressionlist != null && !expressionlist.isEmpty()) {
 			addExpression(expressionlist.get(0), attribute);
 			for (int i = 1; i < expressionlist.size(); i++) {
 				tokenlist.add(new AttributedToken(new Miscellaneous(","), attribute, tokenlist.size()));
@@ -233,10 +291,7 @@ public class ASTParser {
 
 	public void addBreakStatement(BreakStatement statement, ATTRIBUTE attribute) {
 		tokenlist.add(new AttributedToken(new Keyword("break"), attribute, tokenlist.size()));
-		SimpleName name = statement.getLabel();
-		if (name != null) {
-			tokenlist.add(new AttributedToken(new Identifier(name.getIdentifier()), attribute, tokenlist.size()));
-		}
+		addSimpleName(statement.getLabel(), attribute);
 		tokenlist.add(new AttributedToken(new SemiColon(";"), attribute, tokenlist.size()));
 	}
 
@@ -257,6 +312,12 @@ public class ASTParser {
 			addExpression((Expression)statement.getMessage(), attribute);
 		}
 		tokenlist.add(new AttributedToken(new SemiColon(";"), attribute, tokenlist.size()));
+	}
+
+	private void addSimpleName(SimpleName label, ATTRIBUTE attribute) {
+		if (label != null) {
+			tokenlist.add(new AttributedToken(new Identifier(label.getIdentifier()), attribute, tokenlist.size()));
+		}
 	}
 
 	public void addExpression(Expression expression, ATTRIBUTE attribute) {
