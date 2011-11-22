@@ -118,7 +118,7 @@ public class SourceReader {
     }
 
     public void read() {
-		ASTParser parser = ASTParser.newParser(AST.JLS3);
+		ASTParser parser = ASTParser.newParser(AST.JLS4);
 		parser.setResolveBindings(true);
 		parser.setBindingsRecovery(true);
 		parser.setEnvironment(null, null, null, true);
@@ -676,7 +676,10 @@ public class SourceReader {
 					parser.addStatement((Statement)statement, ATTRIBUTE.NORMAL);
 				}
 			}
-	    	System.out.println(">>>"+parser.getTokenlist());
+    		System.out.print(node.getName().getFullyQualifiedName() + ">>>");
+    		for (Token token : parser.getTokens()) {
+    			System.out.print(token.dump() + " ");
+    		}
 		    return super.visit(node);
         }
     }

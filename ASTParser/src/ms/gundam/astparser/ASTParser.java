@@ -4,9 +4,20 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.AbstractTypeDeclaration;
+import org.eclipse.jdt.core.dom.Annotation;
+import org.eclipse.jdt.core.dom.ArrayAccess;
+import org.eclipse.jdt.core.dom.ArrayCreation;
+import org.eclipse.jdt.core.dom.ArrayInitializer;
 import org.eclipse.jdt.core.dom.AssertStatement;
+import org.eclipse.jdt.core.dom.Assignment;
 import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.BooleanLiteral;
 import org.eclipse.jdt.core.dom.BreakStatement;
+import org.eclipse.jdt.core.dom.CastExpression;
+import org.eclipse.jdt.core.dom.CatchClause;
+import org.eclipse.jdt.core.dom.ClassInstanceCreation;
+import org.eclipse.jdt.core.dom.ConditionalExpression;
 import org.eclipse.jdt.core.dom.ConstructorInvocation;
 import org.eclipse.jdt.core.dom.ContinueStatement;
 import org.eclipse.jdt.core.dom.DoStatement;
@@ -14,26 +25,53 @@ import org.eclipse.jdt.core.dom.EmptyStatement;
 import org.eclipse.jdt.core.dom.EnhancedForStatement;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
+import org.eclipse.jdt.core.dom.FieldAccess;
 import org.eclipse.jdt.core.dom.ForStatement;
+import org.eclipse.jdt.core.dom.IExtendedModifier;
 import org.eclipse.jdt.core.dom.IfStatement;
+import org.eclipse.jdt.core.dom.InfixExpression;
+import org.eclipse.jdt.core.dom.InstanceofExpression;
 import org.eclipse.jdt.core.dom.LabeledStatement;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.Name;
+import org.eclipse.jdt.core.dom.NullLiteral;
+import org.eclipse.jdt.core.dom.NumberLiteral;
+import org.eclipse.jdt.core.dom.ParenthesizedExpression;
+import org.eclipse.jdt.core.dom.PostfixExpression;
+import org.eclipse.jdt.core.dom.PrefixExpression;
 import org.eclipse.jdt.core.dom.ReturnStatement;
 import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.Statement;
+import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.dom.SuperConstructorInvocation;
+import org.eclipse.jdt.core.dom.SuperFieldAccess;
+import org.eclipse.jdt.core.dom.SuperMethodInvocation;
 import org.eclipse.jdt.core.dom.SwitchCase;
 import org.eclipse.jdt.core.dom.SwitchStatement;
 import org.eclipse.jdt.core.dom.SynchronizedStatement;
+import org.eclipse.jdt.core.dom.ThisExpression;
 import org.eclipse.jdt.core.dom.ThrowStatement;
 import org.eclipse.jdt.core.dom.TryStatement;
 import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.TypeDeclarationStatement;
+import org.eclipse.jdt.core.dom.TypeLiteral;
+import org.eclipse.jdt.core.dom.VariableDeclarationExpression;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import org.eclipse.jdt.core.dom.WhileStatement;
 
 public class ASTParser {
 	private List<AttributedToken> tokenlist;
 	
+	public List<Token> getTokens() {
+		final List<Token> newList = new ArrayList<Token>();
+		for (final AttributedToken attributedToken : tokenlist) {
+			newList.add(attributedToken.getToken());
+		}
+		return newList;
+	}
+
 	public List<AttributedToken> getTokenlist() {
 		return tokenlist;
 	}
@@ -116,50 +154,116 @@ public class ASTParser {
 	}
 
 	public void addEnhancedForStatement(EnhancedForStatement statement, ATTRIBUTE attribute) {
-		// TODO Auto-generated method stub
-		
+		tokenlist.add(new AttributedToken(new Keyword("for"), attribute, tokenlist.size()));
+		tokenlist.add(new AttributedToken(new Miscellaneous("("), attribute, tokenlist.size()));
+		addSingleVariableDeclaration(statement.getParameter(), attribute);
+		tokenlist.add(new AttributedToken(new Miscellaneous(":"), attribute, tokenlist.size()));
+		addExpression(statement.getExpression(), attribute);
+		tokenlist.add(new AttributedToken(new Miscellaneous(")"), attribute, tokenlist.size()));
+		addStatement(statement.getBody(), attribute);
 	}
 
 	public void addWhileStatement(WhileStatement statement, ATTRIBUTE attribute) {
-		// TODO Auto-generated method stub
-		
+		tokenlist.add(new AttributedToken(new Keyword("while"), attribute, tokenlist.size()));
+		tokenlist.add(new AttributedToken(new Miscellaneous("("), attribute, tokenlist.size()));
+		addExpression(statement.getExpression(), attribute);
+		tokenlist.add(new AttributedToken(new Miscellaneous(")"), attribute, tokenlist.size()));
+		addStatement(statement.getBody(), attribute);
 	}
 
-	public void addVariableDeclarationStatement(
-			VariableDeclarationStatement statement, ATTRIBUTE attribute) {
-		// TODO Auto-generated method stub
-		
+	@SuppressWarnings("unchecked")
+	public void addVariableDeclarationStatement(VariableDeclarationStatement statement, ATTRIBUTE attribute) {
+		List<IExtendedModifier> modlist = statement.modifiers();
+		if (modlist != null && !modlist.isEmpty()) {
+			addIExtendedModifier(modlist.get(0), attribute);
+			for (int i = 1; i < modlist.size(); i++) {
+				addIExtendedModifier(modlist.get(i), attribute);
+			}
+		}
+		addType(statement.getType(), attribute);
+		List<VariableDeclarationFragment> varlist = statement.fragments();
+		if (varlist != null && !varlist.isEmpty()) {
+			addVariableDeclarationFragment(varlist.get(0), attribute);
+			for (int i = 1; i < varlist.size(); i++) {
+				tokenlist.add(new AttributedToken(new Miscellaneous(","), attribute, tokenlist.size()));
+				addVariableDeclarationFragment(varlist.get(i), attribute);
+			}
+		}
+		tokenlist.add(new AttributedToken(new SemiColon(";"), attribute, tokenlist.size()));
 	}
 
-	public void addTypeDeclarationStatement(
-			TypeDeclarationStatement statement, ATTRIBUTE attribute) {
-		// TODO Auto-generated method stub
-		
+	public void addTypeDeclarationStatement(TypeDeclarationStatement statement, ATTRIBUTE attribute) {
+		addAbstractTypeDeclaration(statement.getDeclaration(), attribute);
 	}
 
+	@SuppressWarnings("unchecked")
 	public void addTryStatement(TryStatement statement, ATTRIBUTE attribute) {
-		// TODO Auto-generated method stub
-		
+		tokenlist.add(new AttributedToken(new Keyword("try"), attribute, tokenlist.size()));
+		List<VariableDeclarationExpression> varlist = statement.resources();
+		if (varlist != null && !varlist.isEmpty()) {
+			tokenlist.add(new AttributedToken(new Miscellaneous("("), attribute, tokenlist.size()));
+			addVariableDeclarationExpression(varlist.get(0), attribute);
+			for (int i = 1; i < varlist.size(); i++) {
+				tokenlist.add(new AttributedToken(new SemiColon(";"), attribute, tokenlist.size()));
+				addVariableDeclarationExpression(varlist.get(i), attribute);
+			}
+			tokenlist.add(new AttributedToken(new Miscellaneous(")"), attribute, tokenlist.size()));
+		}
+		addBlock(statement.getBody(), attribute);
+		List<CatchClause> catchlist = statement.catchClauses();
+		if (catchlist != null && !catchlist.isEmpty()) {
+			addCatchClause(catchlist.get(0), attribute);
+			for (int i = 1; i < catchlist.size(); i++) {
+				addCatchClause(catchlist.get(i), attribute);
+			}
+		}
+		Block finalblock = statement.getFinally();
+		if (finalblock != null) {
+			tokenlist.add(new AttributedToken(new Keyword("finally"), attribute, tokenlist.size()));
+			addBlock(finalblock, attribute);
+		}
 	}
 
 	public void addThrowStatement(ThrowStatement statement, ATTRIBUTE attribute) {
-		// TODO Auto-generated method stub
-		
+		tokenlist.add(new AttributedToken(new Keyword("throw"), attribute, tokenlist.size()));
+		addExpression(statement.getExpression(), attribute);
+		tokenlist.add(new AttributedToken(new SemiColon(";"), attribute, tokenlist.size()));
 	}
 
 	public void addSynchronizedStatement(SynchronizedStatement statement, ATTRIBUTE attribute) {
-		// TODO Auto-generated method stub
-		
+		tokenlist.add(new AttributedToken(new Keyword("synchronized"), attribute, tokenlist.size()));
+		tokenlist.add(new AttributedToken(new Miscellaneous("("), attribute, tokenlist.size()));
+		addExpression(statement.getExpression(), attribute);
+		tokenlist.add(new AttributedToken(new Miscellaneous(")"), attribute, tokenlist.size()));
+		addBlock(statement.getBody(), attribute);
 	}
 
+	@SuppressWarnings("unchecked")
 	public void addSwtichStatement(SwitchStatement statement, ATTRIBUTE attribute) {
-		// TODO Auto-generated method stub
-		
+		tokenlist.add(new AttributedToken(new Keyword("switch"), attribute, tokenlist.size()));
+		tokenlist.add(new AttributedToken(new Miscellaneous("("), attribute, tokenlist.size()));
+		addExpression(statement.getExpression(), attribute);
+		tokenlist.add(new AttributedToken(new Miscellaneous(")"), attribute, tokenlist.size()));
+		tokenlist.add(new AttributedToken(new Miscellaneous("{"), attribute, tokenlist.size()));
+		List<Statement> switchlist = statement.statements();
+		if (switchlist != null && !switchlist.isEmpty()) {
+			addStatement(switchlist.get(0), attribute);
+			for (int i = 1; i < switchlist.size(); i++) {
+				addStatement(switchlist.get(i), attribute);
+			}
+		}
+		tokenlist.add(new AttributedToken(new Miscellaneous("}"), attribute, tokenlist.size()));
 	}
 
 	public void addSwitchCase(SwitchCase statement, ATTRIBUTE attribute) {
-		// TODO Auto-generated method stub
-		
+		if (statement.isDefault()) {
+			tokenlist.add(new AttributedToken(new Keyword("default"), attribute, tokenlist.size()));
+			tokenlist.add(new AttributedToken(new Miscellaneous(":"), attribute, tokenlist.size()));
+		} else {
+			tokenlist.add(new AttributedToken(new Keyword("case"), attribute, tokenlist.size()));
+			addExpression(statement.getExpression(), attribute);
+			tokenlist.add(new AttributedToken(new Miscellaneous(":"), attribute, tokenlist.size()));
+		}
 	}
 
 	@SuppressWarnings("unchecked")
@@ -321,11 +425,255 @@ public class ASTParser {
 	}
 
 	public void addExpression(Expression expression, ATTRIBUTE attribute) {
+		switch(expression.getNodeType()) {
+		case ASTNode.NORMAL_ANNOTATION:
+		case ASTNode.MARKER_ANNOTATION:
+		case ASTNode.SINGLE_MEMBER_ANNOTATION:
+			addAnnotation((Annotation)expression, attribute);
+			break;
+		case ASTNode.ARRAY_ACCESS:
+			addArrayAccess((ArrayAccess)expression, attribute);
+			break;
+		case ASTNode.ARRAY_CREATION:
+			addArrayCreation((ArrayCreation)expression, attribute);
+			break;
+		case ASTNode.ARRAY_INITIALIZER:
+			addArrayInitializer((ArrayInitializer)expression, attribute);
+			break;
+		case ASTNode.ASSIGNMENT:
+			addAssignment((Assignment)expression, attribute);
+			break;
+		case ASTNode.BOOLEAN_LITERAL:
+			addBooleanLiteral((BooleanLiteral)expression, attribute);
+			break;
+		case ASTNode.CAST_EXPRESSION:
+			addCaseExpression((CastExpression)expression, attribute);
+			break;
+		case ASTNode.CLASS_INSTANCE_CREATION:
+			addClassInstanceCreation((ClassInstanceCreation)expression, attribute);
+			break;
+		case ASTNode.CONDITIONAL_EXPRESSION:
+			addConditionalExpression((ConditionalExpression)expression, attribute);
+			break;
+		case ASTNode.FIELD_ACCESS:
+			addFieldAccess((FieldAccess)expression, attribute);
+			break;
+		case ASTNode.INFIX_EXPRESSION:
+			addInfixExpression((InfixExpression)expression, attribute);
+			break;
+		case ASTNode.INSTANCEOF_EXPRESSION:
+			addInstanceofExpression((InstanceofExpression)expression, attribute);
+			break;
+		case ASTNode.METHOD_INVOCATION:
+			addMethodInvocation((MethodInvocation)expression, attribute);
+			break;
+		case ASTNode.SIMPLE_NAME:
+		case ASTNode.QUALIFIED_NAME:
+			addName((Name)expression, attribute);
+			break;
+		case ASTNode.NULL_LITERAL:
+			addNullLiteral((NullLiteral)expression, attribute);
+			break;
+		case ASTNode.NUMBER_LITERAL:
+			addNumberLiteral((NumberLiteral)expression, attribute);
+			break;
+		case ASTNode.PARENTHESIZED_EXPRESSION:
+			addParenthesizedExpression((ParenthesizedExpression)expression, attribute);
+			break;
+		case ASTNode.POSTFIX_EXPRESSION:
+			addPostfixExpression((PostfixExpression)expression, attribute);
+			break;
+		case ASTNode.PREFIX_EXPRESSION:
+			addPrefixExpression((PrefixExpression)expression, attribute);
+			break;
+		case ASTNode.STRING_LITERAL:
+			addStringLiteral((StringLiteral)expression, attribute);
+			break;
+		case ASTNode.SUPER_FIELD_ACCESS:
+			addSuperFieldAccess((SuperFieldAccess)expression, attribute);
+			break;
+		case ASTNode.SUPER_METHOD_INVOCATION:
+			addSuperMethodInvocation((SuperMethodInvocation)expression, attribute);
+			break;
+		case ASTNode.THIS_EXPRESSION:
+			addThisExpression((ThisExpression)expression, attribute);
+			break;
+		case ASTNode.TYPE_LITERAL:
+			addTypeLiteral((TypeLiteral)expression, attribute);
+			break;
+		case ASTNode.VARIABLE_DECLARATION_EXPRESSION:
+			addVariableDeclarationExpression((VariableDeclarationExpression)expression, attribute);
+			break;
+		default:
+			throw new IllegalStateException();
+		}
+	}
+
+	private void addVariableDeclarationExpression(VariableDeclarationExpression expression, ATTRIBUTE attribute) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	private void addTypeLiteral(TypeLiteral expression, ATTRIBUTE attribute) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	private void addThisExpression(ThisExpression expression,
+			ATTRIBUTE attribute) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	private void addSuperMethodInvocation(SuperMethodInvocation expression,
+			ATTRIBUTE attribute) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	private void addSuperFieldAccess(SuperFieldAccess expression,
+			ATTRIBUTE attribute) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	private void addStringLiteral(StringLiteral expression, ATTRIBUTE attribute) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	private void addPrefixExpression(PrefixExpression expression,
+			ATTRIBUTE attribute) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	private void addPostfixExpression(PostfixExpression expression,
+			ATTRIBUTE attribute) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	private void addParenthesizedExpression(ParenthesizedExpression expression,
+			ATTRIBUTE attribute) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	private void addNumberLiteral(NumberLiteral expression, ATTRIBUTE attribute) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	private void addNullLiteral(NullLiteral expression, ATTRIBUTE attribute) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	private void addName(Name expression, ATTRIBUTE attribute) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	private void addMethodInvocation(MethodInvocation expression,
+			ATTRIBUTE attribute) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	private void addInstanceofExpression(InstanceofExpression expression,
+			ATTRIBUTE attribute) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	private void addInfixExpression(InfixExpression expression,
+			ATTRIBUTE attribute) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	private void addFieldAccess(FieldAccess expression, ATTRIBUTE attribute) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	private void addConditionalExpression(ConditionalExpression expression,
+			ATTRIBUTE attribute) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	private void addClassInstanceCreation(ClassInstanceCreation expression,
+			ATTRIBUTE attribute) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	private void addCaseExpression(CastExpression expression,
+			ATTRIBUTE attribute) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	private void addBooleanLiteral(BooleanLiteral expression,
+			ATTRIBUTE attribute) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	private void addAssignment(Assignment expression, ATTRIBUTE attribute) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	private void addArrayInitializer(ArrayInitializer expression,
+			ATTRIBUTE attribute) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	private void addArrayCreation(ArrayCreation expression, ATTRIBUTE attribute) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	private void addArrayAccess(ArrayAccess expression, ATTRIBUTE attribute) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	private void addAnnotation(Annotation expression, ATTRIBUTE attribute) {
 		// TODO Auto-generated method stub
 		
 	}
 
 	private void addType(Type type, ATTRIBUTE attribute) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	private void addCatchClause(CatchClause catchClause, ATTRIBUTE attribute) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	private void addAbstractTypeDeclaration(AbstractTypeDeclaration declaration, ATTRIBUTE attribute) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	private void addIExtendedModifier(IExtendedModifier mod, ATTRIBUTE attribute) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	private void addVariableDeclarationFragment(VariableDeclarationFragment var, ATTRIBUTE attribute) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	private void addSingleVariableDeclaration(SingleVariableDeclaration parameter, ATTRIBUTE attribute) {
 		// TODO Auto-generated method stub
 		
 	}
