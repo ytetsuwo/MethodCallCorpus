@@ -38,6 +38,8 @@ public class SourceReader {
     private final String element;
 
     public static void main(String args[]) {
+    int aa[];
+    aa = new int[5][][];
 	if (args.length == 0) {
 	    System.out.println("Specify a source file.");
 	    System.exit(1);

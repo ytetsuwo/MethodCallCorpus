@@ -1,5 +1,6 @@
 package ms.gundam.astparser;
 
+import java.rmi.server.Operation;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -11,11 +12,14 @@ import org.eclipse.jdt.core.dom.ArrayCreation;
 import org.eclipse.jdt.core.dom.ArrayInitializer;
 import org.eclipse.jdt.core.dom.AssertStatement;
 import org.eclipse.jdt.core.dom.Assignment;
+import org.eclipse.jdt.core.dom.Assignment.Operator;
+import org.eclipse.jdt.core.dom.AnonymousClassDeclaration;
 import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.BooleanLiteral;
 import org.eclipse.jdt.core.dom.BreakStatement;
 import org.eclipse.jdt.core.dom.CastExpression;
 import org.eclipse.jdt.core.dom.CatchClause;
+import org.eclipse.jdt.core.dom.CharacterLiteral;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.ConditionalExpression;
 import org.eclipse.jdt.core.dom.ConstructorInvocation;
@@ -32,15 +36,20 @@ import org.eclipse.jdt.core.dom.IfStatement;
 import org.eclipse.jdt.core.dom.InfixExpression;
 import org.eclipse.jdt.core.dom.InstanceofExpression;
 import org.eclipse.jdt.core.dom.LabeledStatement;
+import org.eclipse.jdt.core.dom.MarkerAnnotation;
+import org.eclipse.jdt.core.dom.MemberValuePair;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Name;
+import org.eclipse.jdt.core.dom.NormalAnnotation;
 import org.eclipse.jdt.core.dom.NullLiteral;
 import org.eclipse.jdt.core.dom.NumberLiteral;
 import org.eclipse.jdt.core.dom.ParenthesizedExpression;
 import org.eclipse.jdt.core.dom.PostfixExpression;
 import org.eclipse.jdt.core.dom.PrefixExpression;
+import org.eclipse.jdt.core.dom.QualifiedName;
 import org.eclipse.jdt.core.dom.ReturnStatement;
 import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.StringLiteral;
@@ -418,6 +427,12 @@ public class ASTParser {
 		tokenlist.add(new AttributedToken(new SemiColon(";"), attribute, tokenlist.size()));
 	}
 
+	private void addQualifiedName(QualifiedName expression, ATTRIBUTE attribute) {
+		addName(expression.getQualifier(), attribute);
+		tokenlist.add(new AttributedToken(new Miscellaneous("."), attribute, tokenlist.size()));
+		addSimpleName(expression.getName(), attribute);
+	}
+
 	private void addSimpleName(SimpleName label, ATTRIBUTE attribute) {
 		if (label != null) {
 			tokenlist.add(new AttributedToken(new Identifier(label.getIdentifier()), attribute, tokenlist.size()));
@@ -449,6 +464,8 @@ public class ASTParser {
 		case ASTNode.CAST_EXPRESSION:
 			addCaseExpression((CastExpression)expression, attribute);
 			break;
+		case ASTNode.CHARACTER_LITERAL:
+			addCharacterLiteral((CharacterLiteral)expression, attribute);
 		case ASTNode.CLASS_INSTANCE_CREATION:
 			addClassInstanceCreation((ClassInstanceCreation)expression, attribute);
 			break;
@@ -509,141 +526,339 @@ public class ASTParser {
 		}
 	}
 
+	@SuppressWarnings("unchecked")
 	private void addVariableDeclarationExpression(VariableDeclarationExpression expression, ATTRIBUTE attribute) {
-		// TODO Auto-generated method stub
-		
+		List<IExtendedModifier> modlist = expression.modifiers();
+		if (modlist != null && !modlist.isEmpty()) {
+			addIExtendedModifier(modlist.get(0), attribute);
+			for (int i = 1; i < modlist.size(); i++) {
+				addIExtendedModifier(modlist.get(i), attribute);
+			}
+		}
+		addType(expression.getType(), attribute);
+		List<VariableDeclarationFragment> varlist = expression.fragments();
+		if (varlist != null && !varlist.isEmpty()) {
+			addVariableDeclarationFragment(varlist.get(0), attribute);
+			for (int i = 1; i < varlist.size(); i++) {
+				tokenlist.add(new AttributedToken(new Miscellaneous(","), attribute, tokenlist.size()));
+				addVariableDeclarationFragment(varlist.get(i), attribute);
+			}
+		}
 	}
 
 	private void addTypeLiteral(TypeLiteral expression, ATTRIBUTE attribute) {
-		// TODO Auto-generated method stub
-		
+		Type type = expression.getType();
+		if (type != null) {
+			addType(type, attribute);
+		} else {
+			tokenlist.add(new AttributedToken(new Keyword("void"), attribute, tokenlist.size()));
+		}
+		tokenlist.add(new AttributedToken(new Miscellaneous("."), attribute, tokenlist.size()));
+		tokenlist.add(new AttributedToken(new Keyword("class"), attribute, tokenlist.size()));
 	}
 
-	private void addThisExpression(ThisExpression expression,
-			ATTRIBUTE attribute) {
-		// TODO Auto-generated method stub
-		
+	private void addThisExpression(ThisExpression expression, ATTRIBUTE attribute) {
+		Name name = expression.getQualifier();
+		if (name != null) {
+			addName(name, attribute);
+			tokenlist.add(new AttributedToken(new Miscellaneous("."), attribute, tokenlist.size()));
+		}
+		tokenlist.add(new AttributedToken(new Keyword("this"), attribute, tokenlist.size()));
 	}
 
-	private void addSuperMethodInvocation(SuperMethodInvocation expression,
-			ATTRIBUTE attribute) {
-		// TODO Auto-generated method stub
-		
+	@SuppressWarnings("unchecked")
+	private void addSuperMethodInvocation(SuperMethodInvocation expression, ATTRIBUTE attribute) {
+		Name name = expression.getQualifier();
+		if (name != null) {
+			addName(name, attribute);
+			tokenlist.add(new AttributedToken(new Miscellaneous("."), attribute, tokenlist.size()));
+		}
+		tokenlist.add(new AttributedToken(new Keyword("super"), attribute, tokenlist.size()));
+		tokenlist.add(new AttributedToken(new Miscellaneous("."), attribute, tokenlist.size()));
+		List<Type> typelist = expression.typeArguments();
+		if (typelist != null && !typelist.isEmpty()) {
+			tokenlist.add(new AttributedToken(new Miscellaneous("<"), attribute, tokenlist.size()));
+			addType(typelist.get(0), attribute);
+			for (int i = 1; i < typelist.size(); i++) {
+				tokenlist.add(new AttributedToken(new Miscellaneous(","), attribute, tokenlist.size()));
+				addType(typelist.get(i), attribute);
+			}
+			tokenlist.add(new AttributedToken(new Miscellaneous(">"), attribute, tokenlist.size()));
+		}
+		addSimpleName(expression.getName(), attribute);
+		tokenlist.add(new AttributedToken(new Miscellaneous("("), attribute, tokenlist.size()));
+		List<Expression> explist = expression.arguments();
+		if (explist != null && !explist.isEmpty()) {
+			addExpression(explist.get(0), attribute);
+			for (int i = 1; i < explist.size(); i++) {
+				tokenlist.add(new AttributedToken(new Miscellaneous(","), attribute, tokenlist.size()));
+				addExpression(explist.get(i), attribute);
+			}
+			
+		}
+		tokenlist.add(new AttributedToken(new Miscellaneous(")"), attribute, tokenlist.size()));
 	}
 
-	private void addSuperFieldAccess(SuperFieldAccess expression,
-			ATTRIBUTE attribute) {
-		// TODO Auto-generated method stub
-		
+	private void addSuperFieldAccess(SuperFieldAccess expression, ATTRIBUTE attribute) {
+		Name name = expression.getQualifier();
+		if (name != null) {
+			addName(name, attribute);
+			tokenlist.add(new AttributedToken(new Miscellaneous("."), attribute, tokenlist.size()));
+		}
+		tokenlist.add(new AttributedToken(new Keyword("super"), attribute, tokenlist.size()));
+		tokenlist.add(new AttributedToken(new Miscellaneous("."), attribute, tokenlist.size()));
+		addSimpleName(expression.getName(), attribute);
 	}
 
 	private void addStringLiteral(StringLiteral expression, ATTRIBUTE attribute) {
-		// TODO Auto-generated method stub
-		
+		tokenlist.add(new AttributedToken(new Literal(expression.getEscapedValue()), attribute, tokenlist.size()));
 	}
 
-	private void addPrefixExpression(PrefixExpression expression,
-			ATTRIBUTE attribute) {
-		// TODO Auto-generated method stub
-		
+	private void addPrefixExpression(PrefixExpression expression, ATTRIBUTE attribute) {
+		addExpression(expression.getOperand(), attribute);
+		addPrefixExpressionOperator(expression.getOperator(), attribute);
 	}
 
-	private void addPostfixExpression(PostfixExpression expression,
-			ATTRIBUTE attribute) {
-		// TODO Auto-generated method stub
-		
+	private void addPostfixExpression(PostfixExpression expression, ATTRIBUTE attribute) {
+		addExpression(expression.getOperand(), attribute);
+		addPostfixExpressionOperator(expression.getOperator(), attribute);
 	}
 
-	private void addParenthesizedExpression(ParenthesizedExpression expression,
-			ATTRIBUTE attribute) {
-		// TODO Auto-generated method stub
-		
+	private void addParenthesizedExpression(ParenthesizedExpression expression, ATTRIBUTE attribute) {
+		tokenlist.add(new AttributedToken(new Miscellaneous("("), attribute, tokenlist.size()));
+		addExpression(expression.getExpression(), attribute);
+		tokenlist.add(new AttributedToken(new Miscellaneous(")"), attribute, tokenlist.size()));
 	}
 
 	private void addNumberLiteral(NumberLiteral expression, ATTRIBUTE attribute) {
-		// TODO Auto-generated method stub
-		
+		tokenlist.add(new AttributedToken(new Literal(expression.getToken()), attribute, tokenlist.size()));
 	}
 
 	private void addNullLiteral(NullLiteral expression, ATTRIBUTE attribute) {
-		// TODO Auto-generated method stub
-		
+		tokenlist.add(new AttributedToken(new Literal("null"), attribute, tokenlist.size()));
 	}
 
 	private void addName(Name expression, ATTRIBUTE attribute) {
-		// TODO Auto-generated method stub
-		
+		if (expression.isSimpleName()) {
+			addSimpleName((SimpleName)expression, attribute);
+		} else if (expression.isQualifiedName()) {
+			addQualifiedName((QualifiedName)expression, attribute);
+		} else {
+			throw new IllegalStateException();
+		}
 	}
 
-	private void addMethodInvocation(MethodInvocation expression,
-			ATTRIBUTE attribute) {
-		// TODO Auto-generated method stub
-		
+	@SuppressWarnings("unchecked")
+	private void addMethodInvocation(MethodInvocation expression, ATTRIBUTE attribute) {
+		Expression exp = expression.getExpression();
+		if (exp != null) {
+			addExpression(exp, attribute);
+			tokenlist.add(new AttributedToken(new Miscellaneous("."), attribute, tokenlist.size()));
+		}
+		List<Type> typelist = expression.typeArguments();
+		if (typelist != null && !typelist.isEmpty()) {
+			tokenlist.add(new AttributedToken(new Miscellaneous("<"), attribute, tokenlist.size()));
+			addType(typelist.get(0), attribute);
+			for (int i = 1; i < typelist.size(); i++) {
+				tokenlist.add(new AttributedToken(new Miscellaneous(","), attribute, tokenlist.size()));
+				addType(typelist.get(i), attribute);
+			}
+			tokenlist.add(new AttributedToken(new Miscellaneous(">"), attribute, tokenlist.size()));
+		}
+		addSimpleName(expression.getName(), attribute);
+		tokenlist.add(new AttributedToken(new Miscellaneous("("), attribute, tokenlist.size()));
+		List<Expression> explist = expression.arguments();
+		if (explist != null && !explist.isEmpty()) {
+			addExpression(explist.get(0), attribute);
+			for (int i = 1; i < explist.size(); i++) {
+				tokenlist.add(new AttributedToken(new Miscellaneous(","), attribute, tokenlist.size()));
+				addExpression(explist.get(i), attribute);
+			}
+			
+		}
+		tokenlist.add(new AttributedToken(new Miscellaneous(")"), attribute, tokenlist.size()));
 	}
 
-	private void addInstanceofExpression(InstanceofExpression expression,
-			ATTRIBUTE attribute) {
-		// TODO Auto-generated method stub
-		
+	private void addInstanceofExpression(InstanceofExpression expression, ATTRIBUTE attribute) {
+		addExpression(expression.getLeftOperand(), attribute);
+		tokenlist.add(new AttributedToken(new Keyword("instanceof"), attribute, tokenlist.size()));
+		addType(expression.getRightOperand(), attribute);
 	}
 
-	private void addInfixExpression(InfixExpression expression,
-			ATTRIBUTE attribute) {
-		// TODO Auto-generated method stub
-		
+	@SuppressWarnings("unchecked")
+	private void addInfixExpression(InfixExpression expression, ATTRIBUTE attribute) {
+		addExpression(expression.getLeftOperand(), attribute);
+		addInfixExpressionOperator(expression.getOperator(), attribute);
+		addExpression(expression.getRightOperand(), attribute);
+		if (expression.hasExtendedOperands()) {
+			List<Expression> list = expression.extendedOperands();
+			addInfixExpressionOperator(expression.getOperator(), attribute);
+			addExpression(list.get(0), attribute);
+			for (int i = 1; i < list.size(); i++) {
+				addInfixExpressionOperator(expression.getOperator(), attribute);
+				addExpression(list.get(i), attribute);
+			}
+		}
 	}
 
 	private void addFieldAccess(FieldAccess expression, ATTRIBUTE attribute) {
-		// TODO Auto-generated method stub
-		
+		addExpression(expression.getExpression(), attribute);
+		tokenlist.add(new AttributedToken(new Miscellaneous("."), attribute, tokenlist.size()));
+		addSimpleName(expression.getName(), attribute);
 	}
 
-	private void addConditionalExpression(ConditionalExpression expression,
-			ATTRIBUTE attribute) {
-		// TODO Auto-generated method stub
-		
+	private void addConditionalExpression(ConditionalExpression expression, ATTRIBUTE attribute) {
+		addExpression(expression.getExpression(), attribute);
+		tokenlist.add(new AttributedToken(new Miscellaneous("?"), attribute, tokenlist.size()));
+		addExpression(expression.getThenExpression(), attribute);
+		tokenlist.add(new AttributedToken(new Miscellaneous(":"), attribute, tokenlist.size()));
+		addExpression(expression.getElseExpression(), attribute);
 	}
 
-	private void addClassInstanceCreation(ClassInstanceCreation expression,
-			ATTRIBUTE attribute) {
-		// TODO Auto-generated method stub
-		
+	@SuppressWarnings("unchecked")
+	private void addClassInstanceCreation(ClassInstanceCreation expression, ATTRIBUTE attribute) {
+		Expression exp = expression.getExpression();
+		if (exp != null) {
+			addExpression(exp, attribute);
+			tokenlist.add(new AttributedToken(new Miscellaneous("."), attribute, tokenlist.size()));
+		}
+		tokenlist.add(new AttributedToken(new Keyword("new"), attribute, tokenlist.size()));
+		addType(expression.getType(), attribute);
+		tokenlist.add(new AttributedToken(new Miscellaneous("("), attribute, tokenlist.size()));
+		List<Expression> explist = expression.arguments();
+		if (explist != null && !explist.isEmpty()) {
+			addExpression(explist.get(0), attribute);
+			for (int i = 1; i < explist.size(); i++) {
+				tokenlist.add(new AttributedToken(new Miscellaneous(","), attribute, tokenlist.size()));
+				addExpression(explist.get(i), attribute);
+			}
+			
+		}
+		tokenlist.add(new AttributedToken(new Miscellaneous(")"), attribute, tokenlist.size()));
+		AnonymousClassDeclaration anon = expression.getAnonymousClassDeclaration();
+		if (anon != null) {
+			addAnonymousClassDeclaration(anon, attribute);
+		}
 	}
 
-	private void addCaseExpression(CastExpression expression,
-			ATTRIBUTE attribute) {
-		// TODO Auto-generated method stub
-		
+	private void addCharacterLiteral(CharacterLiteral expression, ATTRIBUTE attribute) {
+		tokenlist.add(new AttributedToken(new Literal(expression.getEscapedValue()), attribute, tokenlist.size()));
 	}
 
-	private void addBooleanLiteral(BooleanLiteral expression,
-			ATTRIBUTE attribute) {
-		// TODO Auto-generated method stub
-		
+	private void addCaseExpression(CastExpression expression, ATTRIBUTE attribute) {
+		tokenlist.add(new AttributedToken(new Miscellaneous("("), attribute, tokenlist.size()));
+		addType(expression.getType(), attribute);
+		tokenlist.add(new AttributedToken(new Miscellaneous(")"), attribute, tokenlist.size()));
+		addExpression(expression.getExpression(), attribute);
+	}
+
+	private void addBooleanLiteral(BooleanLiteral expression, ATTRIBUTE attribute) {
+		if (expression.booleanValue()) {
+			tokenlist.add(new AttributedToken(new Literal("true"), attribute, tokenlist.size()));
+		} else {
+			tokenlist.add(new AttributedToken(new Literal("false"), attribute, tokenlist.size()));
+		}
 	}
 
 	private void addAssignment(Assignment expression, ATTRIBUTE attribute) {
-		// TODO Auto-generated method stub
-		
+		addExpression(expression.getLeftHandSide(), attribute);
+		addAssignmentOperator(expression.getOperator(), attribute);
+		addExpression(expression.getRightHandSide(), attribute);
 	}
 
-	private void addArrayInitializer(ArrayInitializer expression,
-			ATTRIBUTE attribute) {
-		// TODO Auto-generated method stub
-		
+	@SuppressWarnings("unchecked")
+	private void addArrayInitializer(ArrayInitializer expression, ATTRIBUTE attribute) {
+		tokenlist.add(new AttributedToken(new Miscellaneous("{"), attribute, tokenlist.size()));
+		List<Expression> list = expression.expressions();
+		if (list != null && !list.isEmpty()) {
+			addExpression(list.get(0), attribute);
+			for (int i = 1; i < list.size(); i++) {
+				tokenlist.add(new AttributedToken(new Miscellaneous(","), attribute, tokenlist.size()));
+				addExpression(list.get(i), attribute);
+			}
+		}
+		tokenlist.add(new AttributedToken(new Miscellaneous("}"), attribute, tokenlist.size()));
 	}
 
+	@SuppressWarnings("unchecked")
 	private void addArrayCreation(ArrayCreation expression, ATTRIBUTE attribute) {
-		// TODO Auto-generated method stub
-		
+		// TODO Check
+		tokenlist.add(new AttributedToken(new Keyword("new"), attribute, tokenlist.size()));
+		addType(expression.getType().getComponentType(), attribute);
+		List<Expression> list = expression.dimensions();
+		if (list != null && !list.isEmpty()) {
+			tokenlist.add(new AttributedToken(new Miscellaneous("["), attribute, tokenlist.size()));
+			addExpression(list.get(0), attribute);
+			tokenlist.add(new AttributedToken(new Miscellaneous("]"), attribute, tokenlist.size()));
+			for (int i = 1; i < list.size(); i++) {
+				tokenlist.add(new AttributedToken(new Miscellaneous("["), attribute, tokenlist.size()));
+				addExpression(list.get(i), attribute);
+				tokenlist.add(new AttributedToken(new Miscellaneous("]"), attribute, tokenlist.size()));
+			}
+		}
+		ArrayInitializer init = expression.getInitializer();
+		if (init != null) {
+			addArrayInitializer(init, attribute);
+		}
 	}
 
 	private void addArrayAccess(ArrayAccess expression, ATTRIBUTE attribute) {
-		// TODO Auto-generated method stub
-		
+		addExpression(expression.getArray(), attribute);
+		tokenlist.add(new AttributedToken(new Miscellaneous("["), attribute, tokenlist.size()));
+		addExpression(expression.getIndex(), attribute);
+		tokenlist.add(new AttributedToken(new Miscellaneous("]"), attribute, tokenlist.size()));
 	}
 
+	@SuppressWarnings("unchecked")
 	private void addAnnotation(Annotation expression, ATTRIBUTE attribute) {
+		if (expression.isNormalAnnotation()) {
+			NormalAnnotation normal = (NormalAnnotation)expression;
+			tokenlist.add(new AttributedToken(new Miscellaneous("@"), attribute, tokenlist.size()));
+			addName(normal.getTypeName(), attribute);
+			tokenlist.add(new AttributedToken(new Miscellaneous("("), attribute, tokenlist.size()));
+			List<MemberValuePair> pairlist = normal.values();
+			if (pairlist != null && !pairlist.isEmpty()) {
+				MemberValuePair pair = pairlist.get(0);
+				addSimpleName(pair.getName(), attribute);
+				tokenlist.add(new AttributedToken(new Miscellaneous("="), attribute, tokenlist.size()));
+				addExpression(pair.getValue(), attribute);
+				for (int i = 1; i < pairlist.size(); i++) {
+					tokenlist.add(new AttributedToken(new Miscellaneous(","), attribute, tokenlist.size()));
+					addSimpleName(pairlist.get(i).getName(), attribute);
+					tokenlist.add(new AttributedToken(new Miscellaneous("="), attribute, tokenlist.size()));
+					addExpression(pairlist.get(i).getValue(), attribute);
+				}
+			}
+			tokenlist.add(new AttributedToken(new Miscellaneous(")"), attribute, tokenlist.size()));
+		} else if (expression.isMarkerAnnotation()){
+			MarkerAnnotation marker = (MarkerAnnotation)expression;
+			tokenlist.add(new AttributedToken(new Miscellaneous("@"), attribute, tokenlist.size()));
+			addName(marker.getTypeName(), attribute);
+		} else if (expression.isSingleMemberAnnotation()) {
+			SingleMemberAnnotation single = (SingleMemberAnnotation)expression;
+			tokenlist.add(new AttributedToken(new Miscellaneous("@"), attribute, tokenlist.size()));
+			addName(single.getTypeName(), attribute);
+			tokenlist.add(new AttributedToken(new Miscellaneous("("), attribute, tokenlist.size()));
+			addExpression(single.getValue(), attribute);
+			tokenlist.add(new AttributedToken(new Miscellaneous(")"), attribute, tokenlist.size()));
+		} else {
+			throw new IllegalStateException();
+		}
+	}
+
+	private void addPrefixExpressionOperator(PrefixExpression.Operator operator, ATTRIBUTE attribute) {
+		tokenlist.add(new AttributedToken(new ms.gundam.astparser.Operator(operator.toString()), attribute, tokenlist.size()));
+	}
+
+	private void addPostfixExpressionOperator(PostfixExpression.Operator operator, ATTRIBUTE attribute) {
+		tokenlist.add(new AttributedToken(new ms.gundam.astparser.Operator(operator.toString()), attribute, tokenlist.size()));
+	}
+
+	private void addInfixExpressionOperator(InfixExpression.Operator operator, ATTRIBUTE attribute) {
+		tokenlist.add(new AttributedToken(new ms.gundam.astparser.Operator(operator.toString()), attribute, tokenlist.size()));
+	}
+
+	private void addAssignmentOperator(Operator operator, ATTRIBUTE attribute) {
 		// TODO Auto-generated method stub
 		
 	}
@@ -674,6 +889,12 @@ public class ASTParser {
 	}
 
 	private void addSingleVariableDeclaration(SingleVariableDeclaration parameter, ATTRIBUTE attribute) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	private void addAnonymousClassDeclaration(AnonymousClassDeclaration anon,
+			ATTRIBUTE attribute) {
 		// TODO Auto-generated method stub
 		
 	}
