@@ -1,20 +1,22 @@
 package ms.gundam.astparser;
 
-import java.rmi.server.Operation;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.AbstractTypeDeclaration;
 import org.eclipse.jdt.core.dom.Annotation;
+import org.eclipse.jdt.core.dom.AnnotationTypeDeclaration;
+import org.eclipse.jdt.core.dom.AnnotationTypeMemberDeclaration;
 import org.eclipse.jdt.core.dom.ArrayAccess;
 import org.eclipse.jdt.core.dom.ArrayCreation;
 import org.eclipse.jdt.core.dom.ArrayInitializer;
+import org.eclipse.jdt.core.dom.ArrayType;
 import org.eclipse.jdt.core.dom.AssertStatement;
 import org.eclipse.jdt.core.dom.Assignment;
-import org.eclipse.jdt.core.dom.Assignment.Operator;
 import org.eclipse.jdt.core.dom.AnonymousClassDeclaration;
 import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.BodyDeclaration;
 import org.eclipse.jdt.core.dom.BooleanLiteral;
 import org.eclipse.jdt.core.dom.BreakStatement;
 import org.eclipse.jdt.core.dom.CastExpression;
@@ -27,28 +29,38 @@ import org.eclipse.jdt.core.dom.ContinueStatement;
 import org.eclipse.jdt.core.dom.DoStatement;
 import org.eclipse.jdt.core.dom.EmptyStatement;
 import org.eclipse.jdt.core.dom.EnhancedForStatement;
+import org.eclipse.jdt.core.dom.EnumConstantDeclaration;
+import org.eclipse.jdt.core.dom.EnumDeclaration;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
 import org.eclipse.jdt.core.dom.FieldAccess;
+import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.ForStatement;
 import org.eclipse.jdt.core.dom.IExtendedModifier;
 import org.eclipse.jdt.core.dom.IfStatement;
 import org.eclipse.jdt.core.dom.InfixExpression;
+import org.eclipse.jdt.core.dom.Initializer;
 import org.eclipse.jdt.core.dom.InstanceofExpression;
 import org.eclipse.jdt.core.dom.LabeledStatement;
 import org.eclipse.jdt.core.dom.MarkerAnnotation;
 import org.eclipse.jdt.core.dom.MemberValuePair;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.Modifier;
 import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.NormalAnnotation;
 import org.eclipse.jdt.core.dom.NullLiteral;
 import org.eclipse.jdt.core.dom.NumberLiteral;
+import org.eclipse.jdt.core.dom.ParameterizedType;
 import org.eclipse.jdt.core.dom.ParenthesizedExpression;
 import org.eclipse.jdt.core.dom.PostfixExpression;
 import org.eclipse.jdt.core.dom.PrefixExpression;
+import org.eclipse.jdt.core.dom.PrimitiveType;
 import org.eclipse.jdt.core.dom.QualifiedName;
+import org.eclipse.jdt.core.dom.QualifiedType;
 import org.eclipse.jdt.core.dom.ReturnStatement;
 import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.SimpleType;
 import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.Statement;
@@ -63,12 +75,15 @@ import org.eclipse.jdt.core.dom.ThisExpression;
 import org.eclipse.jdt.core.dom.ThrowStatement;
 import org.eclipse.jdt.core.dom.TryStatement;
 import org.eclipse.jdt.core.dom.Type;
+import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.TypeDeclarationStatement;
 import org.eclipse.jdt.core.dom.TypeLiteral;
+import org.eclipse.jdt.core.dom.UnionType;
 import org.eclipse.jdt.core.dom.VariableDeclarationExpression;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import org.eclipse.jdt.core.dom.WhileStatement;
+import org.eclipse.jdt.core.dom.WildcardType;
 
 public class ASTParser {
 	private List<AttributedToken> tokenlist;
@@ -210,6 +225,7 @@ public class ASTParser {
 		tokenlist.add(new AttributedToken(new Keyword("try"), attribute, tokenlist.size()));
 		List<VariableDeclarationExpression> varlist = statement.resources();
 		if (varlist != null && !varlist.isEmpty()) {
+			// TODO isEmputy
 			tokenlist.add(new AttributedToken(new Miscellaneous("("), attribute, tokenlist.size()));
 			addVariableDeclarationExpression(varlist.get(0), attribute);
 			for (int i = 1; i < varlist.size(); i++) {
@@ -577,6 +593,7 @@ public class ASTParser {
 		tokenlist.add(new AttributedToken(new Miscellaneous("."), attribute, tokenlist.size()));
 		List<Type> typelist = expression.typeArguments();
 		if (typelist != null && !typelist.isEmpty()) {
+			// TODO isEmputy
 			tokenlist.add(new AttributedToken(new Miscellaneous("<"), attribute, tokenlist.size()));
 			addType(typelist.get(0), attribute);
 			for (int i = 1; i < typelist.size(); i++) {
@@ -657,6 +674,7 @@ public class ASTParser {
 		}
 		List<Type> typelist = expression.typeArguments();
 		if (typelist != null && !typelist.isEmpty()) {
+			// TODO isEmputy
 			tokenlist.add(new AttributedToken(new Miscellaneous("<"), attribute, tokenlist.size()));
 			addType(typelist.get(0), attribute);
 			for (int i = 1; i < typelist.size(); i++) {
@@ -858,45 +876,484 @@ public class ASTParser {
 		tokenlist.add(new AttributedToken(new ms.gundam.astparser.Operator(operator.toString()), attribute, tokenlist.size()));
 	}
 
-	private void addAssignmentOperator(Operator operator, ATTRIBUTE attribute) {
-		// TODO Auto-generated method stub
-		
+	private void addAssignmentOperator(Assignment.Operator operator, ATTRIBUTE attribute) {
+		tokenlist.add(new AttributedToken(new ms.gundam.astparser.Operator(operator.toString()), attribute, tokenlist.size()));
 	}
 
 	private void addType(Type type, ATTRIBUTE attribute) {
+		if (type.isArrayType()) {
+			addArrayType((ArrayType)type, attribute);
+		} else if (type.isParameterizedType()) {
+			addParameterizedType((ParameterizedType)type, attribute);
+		} else if (type.isPrimitiveType()) {
+			addPrimitiveType((PrimitiveType)type, attribute);
+		} else if (type.isQualifiedType()) {
+			addQualifiedType((QualifiedType)type, attribute);
+		} else if (type.isSimpleType()) {
+			addSimpleType((SimpleType)type, attribute);
+		} else if (type.isUnionType()) {
+			addUnionType((UnionType)type, attribute);
+		} else if (type.isWildcardType()) {
+			addWildcardType((WildcardType)type, attribute);
+		}
+	}
+
+	private void addWildcardType(WildcardType type, ATTRIBUTE attribute) {
+		tokenlist.add(new AttributedToken(new Miscellaneous("?"), attribute, tokenlist.size()));
+		Type boundtype = type.getBound();
+		if (boundtype != null) {
+			if (type.isUpperBound()) {
+				tokenlist.add(new AttributedToken(new Keyword("extends"), attribute, tokenlist.size()));
+			} else {
+				tokenlist.add(new AttributedToken(new Keyword("super"), attribute, tokenlist.size()));
+			}
+			addType(boundtype, attribute);
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	private void addUnionType(UnionType type, ATTRIBUTE attribute) {
+		List<Type> typelist =  type.types();
+		if (typelist != null && !typelist.isEmpty()) {
+			addType(typelist.get(0), attribute);
+			for (int i = 1; i < typelist.size(); i++) {
+				tokenlist.add(new AttributedToken(new Miscellaneous("|"), attribute, tokenlist.size()));
+				addType(typelist.get(i), attribute);
+			}
+		}
+	}
+
+	private void addSimpleType(SimpleType type, ATTRIBUTE attribute) {
+		addName(type.getName(), attribute);
+	}
+
+	private void addQualifiedType(QualifiedType type, ATTRIBUTE attribute) {
+		addType(type.getQualifier(), attribute);
+		tokenlist.add(new AttributedToken(new Miscellaneous("."), attribute, tokenlist.size()));
+		addSimpleName(type.getName(), attribute);
+	}
+
+	private void addPrimitiveType(PrimitiveType type, ATTRIBUTE attribute) {
+		tokenlist.add(new AttributedToken(new Keyword(type.getPrimitiveTypeCode().toString()), attribute, tokenlist.size()));
+	}
+
+	@SuppressWarnings("unchecked")
+	private void addParameterizedType(ParameterizedType type, ATTRIBUTE attribute) {
+		addType(type.getType(), attribute);
+		List<Type> typelist =  type.typeArguments();
+		if (typelist != null && !typelist.isEmpty()) {
+			// TODO isEmputy
+			tokenlist.add(new AttributedToken(new Miscellaneous("<"), attribute, tokenlist.size()));
+			addType(typelist.get(0), attribute);
+			for (int i = 1; i < typelist.size(); i++) {
+				tokenlist.add(new AttributedToken(new Miscellaneous(","), attribute, tokenlist.size()));
+				addType(typelist.get(i), attribute);
+			}
+			tokenlist.add(new AttributedToken(new Miscellaneous(">"), attribute, tokenlist.size()));
+		}
+	}
+
+	private void addArrayType(ArrayType type, ATTRIBUTE attribute) {
 		// TODO Auto-generated method stub
-		
+		addType(type.getComponentType(), attribute);
+		tokenlist.add(new AttributedToken(new Miscellaneous("["), attribute, tokenlist.size()));
+		tokenlist.add(new AttributedToken(new Miscellaneous("]"), attribute, tokenlist.size()));
 	}
 
 	private void addCatchClause(CatchClause catchClause, ATTRIBUTE attribute) {
-		// TODO Auto-generated method stub
-		
+		tokenlist.add(new AttributedToken(new Keyword("catch"), attribute, tokenlist.size()));
+		tokenlist.add(new AttributedToken(new Miscellaneous("("), attribute, tokenlist.size()));
+		addSingleVariableDeclaration(catchClause.getException(), attribute);
+		tokenlist.add(new AttributedToken(new Miscellaneous(")"), attribute, tokenlist.size()));
+		addBlock(catchClause.getBody(), attribute);
 	}
 
 	private void addAbstractTypeDeclaration(AbstractTypeDeclaration declaration, ATTRIBUTE attribute) {
-		// TODO Auto-generated method stub
-		
+		switch(declaration.getNodeType()) {
+		case ASTNode.TYPE_DECLARATION:
+			addTypeDeclaration((TypeDeclaration)declaration, attribute);
+			break;
+		case ASTNode.ENUM_DECLARATION:
+			addEnumDeclaration((EnumDeclaration)declaration, attribute);
+			break;
+		case ASTNode.ANNOTATION_TYPE_DECLARATION:
+			addAnnotationTypeDeclaration((AnnotationTypeDeclaration)declaration, attribute);
+			break;
+		default:
+			throw new IllegalStateException();
+		}
 	}
 
 	private void addIExtendedModifier(IExtendedModifier mod, ATTRIBUTE attribute) {
-		// TODO Auto-generated method stub
-		
+		if (mod.isAnnotation()) {
+			addAnnotation((Annotation)mod, attribute);
+		}
+		if (mod.isModifier()) {
+			addModifier((Modifier)mod, attribute);
+		}
+		throw new IllegalStateException();
+	}
+
+	private void addModifier(Modifier mod, ATTRIBUTE attribute) {
+		tokenlist.add(new AttributedToken(new Keyword(mod.getKeyword().toString()), attribute, tokenlist.size()));
 	}
 
 	private void addVariableDeclarationFragment(VariableDeclarationFragment var, ATTRIBUTE attribute) {
-		// TODO Auto-generated method stub
-		
+		addSimpleName(var.getName(), attribute);
+		int num = var.getExtraDimensions();
+		for (int i = 0; i < num; i++) {
+			tokenlist.add(new AttributedToken(new Miscellaneous("["), attribute, tokenlist.size()));
+			tokenlist.add(new AttributedToken(new Miscellaneous("]"), attribute, tokenlist.size()));
+		}
+		Expression exp = var.getInitializer();
+		if (exp != null) {
+			tokenlist.add(new AttributedToken(new Miscellaneous("="), attribute, tokenlist.size()));
+			addExpression(exp, attribute);
+		}
 	}
 
+	@SuppressWarnings("unchecked")
 	private void addSingleVariableDeclaration(SingleVariableDeclaration parameter, ATTRIBUTE attribute) {
-		// TODO Auto-generated method stub
-		
+		List<IExtendedModifier> modlist = parameter.modifiers();
+		if (modlist != null && !modlist.isEmpty()) {
+			addIExtendedModifier(modlist.get(0), attribute);
+			for (int i = 1; i < modlist.size(); i++) {
+				addIExtendedModifier(modlist.get(i), attribute);
+			}
+		}
+		addType(parameter.getType(), attribute);
+		if (parameter.isVarargs()) {
+			tokenlist.add(new AttributedToken(new Miscellaneous("..."), attribute, tokenlist.size()));
+		}
+		addSimpleName(parameter.getName(), attribute);
+		int num = parameter.getExtraDimensions();
+		for (int i = 0; i < num; i++) {
+			tokenlist.add(new AttributedToken(new Miscellaneous("["), attribute, tokenlist.size()));
+			tokenlist.add(new AttributedToken(new Miscellaneous("]"), attribute, tokenlist.size()));
+		}
+		Expression exp = parameter.getInitializer();
+		if (exp != null) {
+			tokenlist.add(new AttributedToken(new Miscellaneous("="), attribute, tokenlist.size()));
+			addExpression(exp, attribute);
+		}
 	}
 
-	private void addAnonymousClassDeclaration(AnonymousClassDeclaration anon,
-			ATTRIBUTE attribute) {
-		// TODO Auto-generated method stub
-		
+	@SuppressWarnings("unchecked")
+	private void addAnonymousClassDeclaration(AnonymousClassDeclaration anon, ATTRIBUTE attribute) {
+		tokenlist.add(new AttributedToken(new Miscellaneous("["), attribute, tokenlist.size()));
+		tokenlist.add(new AttributedToken(new Miscellaneous("]"), attribute, tokenlist.size()));
+		List<BodyDeclaration> bodylist = anon.bodyDeclarations(); 
+		if (bodylist != null && !bodylist.isEmpty()) {
+			addBodyDeclaration(bodylist.get(0), attribute);
+			for (int i = 1; i < bodylist.size(); i++) {
+				addBodyDeclaration(bodylist.get(i), attribute);
+			}
+		}
+	}
+
+	private void addBodyDeclaration(BodyDeclaration bodyDeclaration, ATTRIBUTE attribute) {
+		if (bodyDeclaration instanceof AbstractTypeDeclaration) {
+			addAbstractTypeDeclaration((AbstractTypeDeclaration)bodyDeclaration, attribute);
+		} else if (bodyDeclaration instanceof AnnotationTypeMemberDeclaration) {
+			addAnnotationTypeMemberDeclaration((AnnotationTypeMemberDeclaration)bodyDeclaration, attribute);
+		} else if (bodyDeclaration instanceof EnumConstantDeclaration) {
+			addEnumConstantDeclaration((EnumConstantDeclaration)bodyDeclaration, attribute);
+		} else if (bodyDeclaration instanceof FieldDeclaration) {
+			addFieldDeclaration((FieldDeclaration)bodyDeclaration, attribute);
+		} else if (bodyDeclaration instanceof Initializer) {
+			addInitializer((Initializer)bodyDeclaration, attribute);
+		} else if (bodyDeclaration instanceof MethodDeclaration) {
+			addMethodDeclaration((MethodDeclaration)bodyDeclaration, attribute);
+		} else {
+			throw new IllegalStateException();
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	private void addMethodDeclaration(MethodDeclaration bodyDeclaration, ATTRIBUTE attribute) {
+		List<IExtendedModifier> modlist = bodyDeclaration.modifiers();
+		if (modlist != null && !modlist.isEmpty()) {
+			addIExtendedModifier(modlist.get(0), attribute);
+			for (int i = 1; i < modlist.size(); i++) {
+				addIExtendedModifier(modlist.get(i), attribute);
+			}
+		}
+		List<Type> typelist =  bodyDeclaration.typeParameters();
+		if (typelist != null && !typelist.isEmpty()) {
+			tokenlist.add(new AttributedToken(new Miscellaneous("<"), attribute, tokenlist.size()));
+			addType(typelist.get(0), attribute);
+			for (int i = 1; i < typelist.size(); i++) {
+				tokenlist.add(new AttributedToken(new Miscellaneous(","), attribute, tokenlist.size()));
+				addType(typelist.get(i), attribute);
+			}
+			tokenlist.add(new AttributedToken(new Miscellaneous(">"), attribute, tokenlist.size()));
+		}
+		if (!bodyDeclaration.isConstructor()) {
+			Type type = bodyDeclaration.getReturnType2();
+			if (type != null) {
+				addType(bodyDeclaration.getReturnType2(), attribute);
+			}
+		}
+		addSimpleName(bodyDeclaration.getName(), attribute);
+		tokenlist.add(new AttributedToken(new Miscellaneous("("), attribute, tokenlist.size()));
+		List<SingleVariableDeclaration> paramlist =  bodyDeclaration.parameters();
+		if (paramlist != null && !paramlist.isEmpty()) {
+			addSingleVariableDeclaration(paramlist.get(0), attribute);
+			for (int i = 1; i < paramlist.size(); i++) {
+				tokenlist.add(new AttributedToken(new Miscellaneous(","), attribute, tokenlist.size()));
+				addSingleVariableDeclaration(paramlist.get(i), attribute);
+			}
+		}
+		tokenlist.add(new AttributedToken(new Miscellaneous(")"), attribute, tokenlist.size()));
+		int num = bodyDeclaration.getExtraDimensions();
+		for (int i = 0; i < num; i++) {
+			tokenlist.add(new AttributedToken(new Miscellaneous("["), attribute, tokenlist.size()));
+			tokenlist.add(new AttributedToken(new Miscellaneous("]"), attribute, tokenlist.size()));
+		}
+		List<Name> explist =  bodyDeclaration.thrownExceptions();
+		if (explist != null && !explist.isEmpty()) {
+			tokenlist.add(new AttributedToken(new Keyword("throw"), attribute, tokenlist.size()));
+			addName(explist.get(0), attribute);
+			for (int i = 1; i < explist.size(); i++) {
+				tokenlist.add(new AttributedToken(new Miscellaneous(","), attribute, tokenlist.size()));
+				addName(explist.get(i), attribute);
+			}
+		}
+		addBlock(bodyDeclaration.getBody(), attribute);
+	}
+
+	@SuppressWarnings("unchecked")
+	private void addInitializer(Initializer bodyDeclaration, ATTRIBUTE attribute) {
+		List<IExtendedModifier> modlist = bodyDeclaration.modifiers();
+		if (modlist != null && !modlist.isEmpty()) {
+			addIExtendedModifier(modlist.get(0), attribute);
+			for (int i = 1; i < modlist.size(); i++) {
+				addIExtendedModifier(modlist.get(i), attribute);
+			}
+		}
+		addBlock(bodyDeclaration.getBody(), attribute);
+	}
+
+	@SuppressWarnings("unchecked")
+	private void addFieldDeclaration(FieldDeclaration bodyDeclaration, ATTRIBUTE attribute) {
+		List<IExtendedModifier> modlist = bodyDeclaration.modifiers();
+		if (modlist != null && !modlist.isEmpty()) {
+			addIExtendedModifier(modlist.get(0), attribute);
+			for (int i = 1; i < modlist.size(); i++) {
+				addIExtendedModifier(modlist.get(i), attribute);
+			}
+		}
+		addType(bodyDeclaration.getType(), attribute);
+		List<VariableDeclarationFragment> paramlist =  bodyDeclaration.fragments();
+		if (paramlist != null && !paramlist.isEmpty()) {
+			addVariableDeclarationFragment(paramlist.get(0), attribute);
+			for (int i = 1; i < paramlist.size(); i++) {
+				tokenlist.add(new AttributedToken(new Miscellaneous(","), attribute, tokenlist.size()));
+				addVariableDeclarationFragment(paramlist.get(i), attribute);
+			}
+		}
+		tokenlist.add(new AttributedToken(new SemiColon(";"), attribute, tokenlist.size()));
+	}
+
+	@SuppressWarnings("unchecked")
+	private void addEnumConstantDeclaration(EnumConstantDeclaration bodyDeclaration, ATTRIBUTE attribute) {
+		List<IExtendedModifier> modlist = bodyDeclaration.modifiers();
+		if (modlist != null && !modlist.isEmpty()) {
+			addIExtendedModifier(modlist.get(0), attribute);
+			for (int i = 1; i < modlist.size(); i++) {
+				addIExtendedModifier(modlist.get(i), attribute);
+			}
+		}
+		addSimpleName(bodyDeclaration.getName(), attribute);
+		List<Expression> paramlist =  bodyDeclaration.arguments();
+		if (paramlist != null) {
+			tokenlist.add(new AttributedToken(new Miscellaneous("("), attribute, tokenlist.size()));
+			if (!paramlist.isEmpty()) {
+				addExpression(paramlist.get(0), attribute);
+				for (int i = 1; i < paramlist.size(); i++) {
+					tokenlist.add(new AttributedToken(new Miscellaneous(","), attribute, tokenlist.size()));
+					addExpression(paramlist.get(i), attribute);
+				}
+			}
+			tokenlist.add(new AttributedToken(new Miscellaneous(")"), attribute, tokenlist.size()));
+		}
+		AnonymousClassDeclaration anon = bodyDeclaration.getAnonymousClassDeclaration();
+		if (anon != null) {
+			addAnonymousClassDeclaration(anon, attribute);
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	private void addAnnotationTypeMemberDeclaration(AnnotationTypeMemberDeclaration bodyDeclaration, ATTRIBUTE attribute) {
+		List<IExtendedModifier> modlist = bodyDeclaration.modifiers();
+		if (modlist != null && !modlist.isEmpty()) {
+			addIExtendedModifier(modlist.get(0), attribute);
+			for (int i = 1; i < modlist.size(); i++) {
+				addIExtendedModifier(modlist.get(i), attribute);
+			}
+		}
+		addType(bodyDeclaration.getType(), attribute);
+		addSimpleName(bodyDeclaration.getName(), attribute);
+		tokenlist.add(new AttributedToken(new Miscellaneous("("), attribute, tokenlist.size()));
+		tokenlist.add(new AttributedToken(new Miscellaneous(")"), attribute, tokenlist.size()));
+		Expression exp = bodyDeclaration.getDefault();
+		if (exp != null) {
+			tokenlist.add(new AttributedToken(new Keyword("default"), attribute, tokenlist.size()));
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	private void addTypeDeclaration(TypeDeclaration declaration, ATTRIBUTE attribute) {
+		{
+			List<IExtendedModifier> modlist = declaration.modifiers();
+			if (modlist != null && !modlist.isEmpty()) {
+				addIExtendedModifier(modlist.get(0), attribute);
+				for (int i = 1; i < modlist.size(); i++) {
+					addIExtendedModifier(modlist.get(i), attribute);
+				}
+			}
+		}
+		if (declaration.isInterface()) {
+			tokenlist.add(new AttributedToken(new Keyword("interface"), attribute, tokenlist.size()));
+		} else {
+			tokenlist.add(new AttributedToken(new Keyword("class"), attribute, tokenlist.size()));
+		}
+		addSimpleName(declaration.getName(), attribute);
+		{
+			List<Type> typelist =  declaration.typeParameters();
+			if (typelist != null && !typelist.isEmpty()) {
+				tokenlist.add(new AttributedToken(new Miscellaneous("<"), attribute, tokenlist.size()));
+				addType(typelist.get(0), attribute);
+				for (int i = 1; i < typelist.size(); i++) {
+					tokenlist.add(new AttributedToken(new Miscellaneous(","), attribute, tokenlist.size()));
+					addType(typelist.get(i), attribute);
+				}
+				tokenlist.add(new AttributedToken(new Miscellaneous(">"), attribute, tokenlist.size()));
+			}
+		}
+		if (declaration.isInterface()) {
+			{
+				List<Type> interfacelist =  declaration.superInterfaceTypes();
+				if (interfacelist != null && !interfacelist.isEmpty()) {
+					tokenlist.add(new AttributedToken(new Keyword("extends"), attribute, tokenlist.size()));
+					addType(interfacelist.get(0), attribute);
+					for (int i = 1; i < interfacelist.size(); i++) {
+						tokenlist.add(new AttributedToken(new Miscellaneous(","), attribute, tokenlist.size()));
+						addType(interfacelist.get(i), attribute);
+					}
+				}
+			}
+		} else {
+			Type superclass = declaration.getSuperclassType();
+			if (superclass != null) {
+				tokenlist.add(new AttributedToken(new Keyword("extends"), attribute, tokenlist.size()));
+				addType(superclass, attribute);
+			}
+			{
+				List<Type> interfacelist =  declaration.superInterfaceTypes();
+				if (interfacelist != null && !interfacelist.isEmpty()) {
+					tokenlist.add(new AttributedToken(new Keyword("implements"), attribute, tokenlist.size()));
+					addType(interfacelist.get(0), attribute);
+					for (int i = 1; i < interfacelist.size(); i++) {
+						tokenlist.add(new AttributedToken(new Miscellaneous(","), attribute, tokenlist.size()));
+						addType(interfacelist.get(i), attribute);
+					}
+				}
+			}
+		}
+		tokenlist.add(new AttributedToken(new Miscellaneous("{"), attribute, tokenlist.size()));
+		{
+			List<TypeDeclaration> bodylist = declaration.bodyDeclarations();
+			if (bodylist != null && !bodylist.isEmpty()) {
+				addTypeDeclaration(bodylist.get(0), attribute);
+				for (int i = 1; i < bodylist.size(); i++) {
+					addTypeDeclaration(bodylist.get(i), attribute);
+				}
+			} else {
+				tokenlist.add(new AttributedToken(new SemiColon(";"), attribute, tokenlist.size()));
+			}
+		}
+		tokenlist.add(new AttributedToken(new Miscellaneous("}"), attribute, tokenlist.size()));
+	}
+
+	@SuppressWarnings("unchecked")
+	private void addEnumDeclaration(EnumDeclaration declaration, ATTRIBUTE attribute) {
+		{
+			List<IExtendedModifier> modlist = declaration.modifiers();
+			if (modlist != null && !modlist.isEmpty()) {
+				addIExtendedModifier(modlist.get(0), attribute);
+				for (int i = 1; i < modlist.size(); i++) {
+					addIExtendedModifier(modlist.get(i), attribute);
+				}
+			}
+		}
+		tokenlist.add(new AttributedToken(new Keyword("enum"), attribute, tokenlist.size()));
+		addSimpleName(declaration.getName(), attribute);
+		{
+			List<Type> interfacelist =  declaration.superInterfaceTypes();
+			if (interfacelist != null && !interfacelist.isEmpty()) {
+				tokenlist.add(new AttributedToken(new Keyword("implements"), attribute, tokenlist.size()));
+				addType(interfacelist.get(0), attribute);
+				for (int i = 1; i < interfacelist.size(); i++) {
+					tokenlist.add(new AttributedToken(new Miscellaneous(","), attribute, tokenlist.size()));
+					addType(interfacelist.get(i), attribute);
+				}
+			}
+		}
+		tokenlist.add(new AttributedToken(new Miscellaneous("{"), attribute, tokenlist.size()));
+		{
+			List<EnumConstantDeclaration> enumlist =  declaration.enumConstants();
+			if (enumlist != null && !enumlist.isEmpty()) {
+				addEnumConstantDeclaration(enumlist.get(0), attribute);
+				for (int i = 1; i < enumlist.size(); i++) {
+					tokenlist.add(new AttributedToken(new Miscellaneous(","), attribute, tokenlist.size()));
+					addEnumConstantDeclaration(enumlist.get(i), attribute);
+				}
+				tokenlist.add(new AttributedToken(new Miscellaneous(","), attribute, tokenlist.size()));
+			}
+		}
+		{
+			List<TypeDeclaration> bodylist = declaration.bodyDeclarations();
+			if (bodylist != null && !bodylist.isEmpty()) {
+				tokenlist.add(new AttributedToken(new SemiColon(";"), attribute, tokenlist.size()));
+				addTypeDeclaration(bodylist.get(0), attribute);
+				for (int i = 1; i < bodylist.size(); i++) {
+					addTypeDeclaration(bodylist.get(i), attribute);
+				}
+			} else {
+				tokenlist.add(new AttributedToken(new SemiColon(";"), attribute, tokenlist.size()));
+			}
+		}
+		tokenlist.add(new AttributedToken(new Miscellaneous("}"), attribute, tokenlist.size()));
+	}
+
+	@SuppressWarnings("unchecked")
+	private void addAnnotationTypeDeclaration(AnnotationTypeDeclaration declaration, ATTRIBUTE attribute) {
+		{
+			List<IExtendedModifier> modlist = declaration.modifiers();
+			if (modlist != null && !modlist.isEmpty()) {
+				addIExtendedModifier(modlist.get(0), attribute);
+				for (int i = 1; i < modlist.size(); i++) {
+					addIExtendedModifier(modlist.get(i), attribute);
+				}
+			}
+		}
+		tokenlist.add(new AttributedToken(new Miscellaneous("@"), attribute, tokenlist.size()));
+		tokenlist.add(new AttributedToken(new Keyword("interface"), attribute, tokenlist.size()));
+		addSimpleName(declaration.getName(), attribute);
+		tokenlist.add(new AttributedToken(new Miscellaneous("{"), attribute, tokenlist.size()));
+		{
+			List<TypeDeclaration> bodylist = declaration.bodyDeclarations();
+			if (bodylist != null && !bodylist.isEmpty()) {
+				addTypeDeclaration(bodylist.get(0), attribute);
+				for (int i = 1; i < bodylist.size(); i++) {
+					addTypeDeclaration(bodylist.get(i), attribute);
+				}
+			} else {
+				tokenlist.add(new AttributedToken(new SemiColon(";"), attribute, tokenlist.size()));
+			}
+		}
+		tokenlist.add(new AttributedToken(new Miscellaneous("}"), attribute, tokenlist.size()));
 	}
 
 }
