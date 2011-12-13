@@ -1,15 +1,8 @@
-package ms.gundam.astparser;
+package token;
 
-public class Literal implements Token {
-
-	private String name;
-
+public class Literal extends Token {
 	public Literal(String name) {
-		this.name = name;
-	}
-
-	public String getName() {
-		return name;
+		super(name);
 	}
 
 	@Override

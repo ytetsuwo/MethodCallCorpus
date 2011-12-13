@@ -1,4 +1,4 @@
-package ms.gundam.astparser;
+package token;
 
 public class AssignmentOperator extends Operator {
 	public AssignmentOperator(final String name) {

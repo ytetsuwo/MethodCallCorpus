@@ -1,20 +1,12 @@
-package ms.gundam.astparser;
+package token;
 
 /**
  * カッコやセミコロンなど雑多なトークンを表すクラス
  * 
- * @author higo
- *
  */
-public class Miscellaneous implements Token {
-	private String name;
-
+public class Miscellaneous extends Token {
 	public Miscellaneous(String name) {
-		this.name = name;
-	}
-
-	public String getName() {
-		return name;
+		super(name);
 	}
 
 	@Override

@@ -1,14 +1,8 @@
-package ms.gundam.astparser;
+package token;
 
-public final class Keyword implements Token {
-	private String name;
-
+public final class Keyword extends Token {
 	public Keyword(String name) {
-		this.name = name;
-	}
-
-	public String getName() {
-		return name;
+		super(name);
 	}
 
 	@Override

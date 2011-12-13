@@ -1,4 +1,4 @@
-package ms.gundam.astparser;
+package token;
 
 public class SemiColon extends Miscellaneous {
 	public SemiColon(final String name) {

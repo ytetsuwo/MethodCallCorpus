@@ -21,6 +21,8 @@ import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.IBinding;
 
+import token.Token;
+
 /**
  *  
  * @author tetsuo

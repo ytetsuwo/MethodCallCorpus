@@ -1,4 +1,5 @@
-package ms.gundam.astparser;
+package token;
+
 
 public class TokenFactory {
 	public static Token create(String str) {

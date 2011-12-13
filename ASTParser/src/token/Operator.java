@@ -1,15 +1,8 @@
-package ms.gundam.astparser;
+package token;
 
-public class Operator implements Token {
-
-	private String name;
-
+public class Operator extends Token {
 	public Operator(String name) {
-		this.name = name;
-	}
-
-	public String getName() {
-		return name;
+		super(name);
 	}
 
 	@Override

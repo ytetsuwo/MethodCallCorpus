@@ -1,8 +1,9 @@
-package ms.gundam.astparser;
+package token;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
+
 
 
 public class TokenHash {

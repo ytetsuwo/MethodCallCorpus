@@ -1,14 +1,8 @@
-package ms.gundam.astparser;
+package token;
 
-public final class Identifier implements Token {
-	private String name;
-
+public final class Identifier extends Token {
 	public Identifier(String name) {
-		this.name = name;
-	}
-
-	public String getName() {
-		return name;
+		super(name);
 	}
 
 	@Override
