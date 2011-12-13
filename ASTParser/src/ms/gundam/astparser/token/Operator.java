@@ -1,4 +1,4 @@
-package token;
+package ms.gundam.astparser.token;
 
 public class Operator extends Token {
 	public Operator(String name) {

@@ -3,6 +3,13 @@ package ms.gundam.astparser;
 import java.util.ArrayList;
 import java.util.List;
 
+import ms.gundam.astparser.token.Identifier;
+import ms.gundam.astparser.token.Keyword;
+import ms.gundam.astparser.token.Literal;
+import ms.gundam.astparser.token.Miscellaneous;
+import ms.gundam.astparser.token.SemiColon;
+import ms.gundam.astparser.token.Token;
+
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.AbstractTypeDeclaration;
 import org.eclipse.jdt.core.dom.Annotation;
@@ -85,12 +92,6 @@ import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import org.eclipse.jdt.core.dom.WhileStatement;
 import org.eclipse.jdt.core.dom.WildcardType;
 
-import token.Identifier;
-import token.Keyword;
-import token.Literal;
-import token.Miscellaneous;
-import token.SemiColon;
-import token.Token;
 
 public class ASTParser {
 	private List<AttributedToken> tokenlist;
@@ -872,19 +873,19 @@ public class ASTParser {
 	}
 
 	private void addPrefixExpressionOperator(PrefixExpression.Operator operator, ATTRIBUTE attribute) {
-		tokenlist.add(new AttributedToken(new token.Operator(operator.toString()), attribute, tokenlist.size()));
+		tokenlist.add(new AttributedToken(new ms.gundam.astparser.token.Operator(operator.toString()), attribute, tokenlist.size()));
 	}
 
 	private void addPostfixExpressionOperator(PostfixExpression.Operator operator, ATTRIBUTE attribute) {
-		tokenlist.add(new AttributedToken(new token.Operator(operator.toString()), attribute, tokenlist.size()));
+		tokenlist.add(new AttributedToken(new ms.gundam.astparser.token.Operator(operator.toString()), attribute, tokenlist.size()));
 	}
 
 	private void addInfixExpressionOperator(InfixExpression.Operator operator, ATTRIBUTE attribute) {
-		tokenlist.add(new AttributedToken(new token.Operator(operator.toString()), attribute, tokenlist.size()));
+		tokenlist.add(new AttributedToken(new ms.gundam.astparser.token.Operator(operator.toString()), attribute, tokenlist.size()));
 	}
 
 	private void addAssignmentOperator(Assignment.Operator operator, ATTRIBUTE attribute) {
-		tokenlist.add(new AttributedToken(new token.Operator(operator.toString()), attribute, tokenlist.size()));
+		tokenlist.add(new AttributedToken(new ms.gundam.astparser.token.Operator(operator.toString()), attribute, tokenlist.size()));
 	}
 
 	private void addType(Type type, ATTRIBUTE attribute) {

@@ -1,13 +1,13 @@
-package token;
+package ms.gundam.astparser.token;
 
-public final class Identifier extends Token {
-	public Identifier(String name) {
+public final class Keyword extends Token {
+	public Keyword(String name) {
 		super(name);
 	}
 
 	@Override
 	public String dump() {
-		return 'I' + name;
+		return 'K' + name;
 	}
 
 	@Override

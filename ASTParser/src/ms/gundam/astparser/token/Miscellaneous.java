@@ -1,4 +1,4 @@
-package token;
+package ms.gundam.astparser.token;
 
 /**
  * カッコやセミコロンなど雑多なトークンを表すクラス

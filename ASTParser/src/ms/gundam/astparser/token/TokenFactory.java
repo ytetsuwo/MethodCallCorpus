@@ -1,4 +1,4 @@
-package token;
+package ms.gundam.astparser.token;
 
 
 public class TokenFactory {

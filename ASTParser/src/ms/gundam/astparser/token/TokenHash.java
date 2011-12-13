@@ -1,4 +1,4 @@
-package token;
+package ms.gundam.astparser.token;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
