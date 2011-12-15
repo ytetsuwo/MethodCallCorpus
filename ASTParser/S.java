@@ -39,7 +39,7 @@ public class SourceReader {
 
     public static void main(String args[]) {
     int aa[];
-    aa = new int[5][][];
+    aa = new List<Node, Node2>[5][i][][][]  {1,2,3,4,5};
 	if (args.length == 0) {
 	    System.out.println("Specify a source file.");
 	    System.exit(1);

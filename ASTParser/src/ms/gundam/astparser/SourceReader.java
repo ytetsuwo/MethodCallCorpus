@@ -119,8 +119,10 @@ public class SourceReader {
 		    sourcestr.append("(){");
     		for (Token token : parser.getTokens()) {
     			sourcestr.append(token.getName());
-    			if (token.getName().equals(".") || token.getName().equals(";")) {
-    				sourcestr.deleteCharAt(sourcestr.length()-2);
+    			if (token.dump().charAt(0) == 'M') {
+    				if (sourcestr.charAt(sourcestr.length()-2) == ' ') {
+    					sourcestr.deleteCharAt(sourcestr.length()-2);
+    				}
     			} else {
     				sourcestr.append(" ");
     			}

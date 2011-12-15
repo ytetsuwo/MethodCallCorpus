@@ -233,7 +233,6 @@ public class ASTParser {
 		tokenlist.add(new AttributedToken(new Keyword("try"), attribute, tokenlist.size()));
 		List<VariableDeclarationExpression> varlist = statement.resources();
 		if (varlist != null && !varlist.isEmpty()) {
-			// TODO isEmputy
 			tokenlist.add(new AttributedToken(new Miscellaneous("("), attribute, tokenlist.size()));
 			addVariableDeclarationExpression(varlist.get(0), attribute);
 			for (int i = 1; i < varlist.size(); i++) {
@@ -601,7 +600,6 @@ public class ASTParser {
 		tokenlist.add(new AttributedToken(new Miscellaneous("."), attribute, tokenlist.size()));
 		List<Type> typelist = expression.typeArguments();
 		if (typelist != null && !typelist.isEmpty()) {
-			// TODO isEmputy
 			tokenlist.add(new AttributedToken(new Miscellaneous("<"), attribute, tokenlist.size()));
 			addType(typelist.get(0), attribute);
 			for (int i = 1; i < typelist.size(); i++) {
@@ -640,8 +638,8 @@ public class ASTParser {
 	}
 
 	private void addPrefixExpression(PrefixExpression expression, ATTRIBUTE attribute) {
-		addExpression(expression.getOperand(), attribute);
 		addPrefixExpressionOperator(expression.getOperator(), attribute);
+		addExpression(expression.getOperand(), attribute);
 	}
 
 	private void addPostfixExpression(PostfixExpression expression, ATTRIBUTE attribute) {
@@ -682,7 +680,6 @@ public class ASTParser {
 		}
 		List<Type> typelist = expression.typeArguments();
 		if (typelist != null && !typelist.isEmpty()) {
-			// TODO isEmputy
 			tokenlist.add(new AttributedToken(new Miscellaneous("<"), attribute, tokenlist.size()));
 			addType(typelist.get(0), attribute);
 			for (int i = 1; i < typelist.size(); i++) {
@@ -808,9 +805,8 @@ public class ASTParser {
 
 	@SuppressWarnings("unchecked")
 	private void addArrayCreation(ArrayCreation expression, ATTRIBUTE attribute) {
-		// TODO Check
 		tokenlist.add(new AttributedToken(new Keyword("new"), attribute, tokenlist.size()));
-		addType(expression.getType().getComponentType(), attribute);
+		addType(expression.getType().getElementType(), attribute);
 		List<Expression> list = expression.dimensions();
 		if (list != null && !list.isEmpty()) {
 			tokenlist.add(new AttributedToken(new Miscellaneous("["), attribute, tokenlist.size()));
@@ -819,6 +815,13 @@ public class ASTParser {
 			for (int i = 1; i < list.size(); i++) {
 				tokenlist.add(new AttributedToken(new Miscellaneous("["), attribute, tokenlist.size()));
 				addExpression(list.get(i), attribute);
+				tokenlist.add(new AttributedToken(new Miscellaneous("]"), attribute, tokenlist.size()));
+			}
+		}
+		int count = expression.getType().getDimensions() - list.size();
+		if (count >= 0) {
+			for (int i = 0; i < count; i++) {
+				tokenlist.add(new AttributedToken(new Miscellaneous("["), attribute, tokenlist.size()));
 				tokenlist.add(new AttributedToken(new Miscellaneous("]"), attribute, tokenlist.size()));
 			}
 		}
@@ -950,7 +953,6 @@ public class ASTParser {
 		addType(type.getType(), attribute);
 		List<Type> typelist =  type.typeArguments();
 		if (typelist != null && !typelist.isEmpty()) {
-			// TODO isEmputy
 			tokenlist.add(new AttributedToken(new Miscellaneous("<"), attribute, tokenlist.size()));
 			addType(typelist.get(0), attribute);
 			for (int i = 1; i < typelist.size(); i++) {
@@ -962,7 +964,6 @@ public class ASTParser {
 	}
 
 	private void addArrayType(ArrayType type, ATTRIBUTE attribute) {
-		// TODO Auto-generated method stub
 		addType(type.getComponentType(), attribute);
 		tokenlist.add(new AttributedToken(new Miscellaneous("["), attribute, tokenlist.size()));
 		tokenlist.add(new AttributedToken(new Miscellaneous("]"), attribute, tokenlist.size()));
