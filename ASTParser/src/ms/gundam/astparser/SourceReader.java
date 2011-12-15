@@ -1,10 +1,16 @@
 package ms.gundam.astparser;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -79,6 +85,7 @@ public class SourceReader {
      * VisitorパターンでASTの内容を表示する
      */
     class ASTVisitorImpl extends ASTVisitor {
+/*
 		@Override
         public boolean visit(Assignment node) {
     		System.out.print("ASSIGN***: ");
@@ -97,7 +104,7 @@ public class SourceReader {
 		    System.out.println(lefttype + " = " + righttype);
 	    	return super.visit(node);
 		}
-
+*/
     	@Override
     	public boolean visit(MethodDeclaration node) {
 	    	Block body = node.getBody();
@@ -107,11 +114,45 @@ public class SourceReader {
 					parser.addStatement((Statement)statement, ATTRIBUTE.NORMAL);
 				}
 			}
-    		System.out.print(node.getName().getFullyQualifiedName() + ">>>");
+		    StringBuffer sourcestr = new StringBuffer(node.getReturnType2() == null ? "" :  node.getReturnType2() + " ");
+		    sourcestr.append(node.getName().getFullyQualifiedName());
+		    sourcestr.append("(){");
     		for (Token token : parser.getTokens()) {
-    			System.out.print(token.dump() + " ");
+    			sourcestr.append(token.getName());
+    			if (token.getName().equals(".") || token.getName().equals(";")) {
+    				sourcestr.deleteCharAt(sourcestr.length()-2);
+    			} else {
+    				sourcestr.append(" ");
+    			}
     		}
-   			System.out.println();
+    		sourcestr.append("}\n");
+    		try {
+    			File tempfile = File.createTempFile("ast", ".java");
+    			OutputStream output = new FileOutputStream(tempfile);
+    			BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(output));
+    			writer.write(sourcestr.toString());
+    			writer.close();
+
+    			String[] cmdarray = {"/Users/tetsuo/bin/astyle", "-npUH", "--mode=java", tempfile.getAbsolutePath()};
+    			ProcessBuilder b = new ProcessBuilder(cmdarray);
+    			b.redirectErrorStream(true);
+    			Process process = b.start();
+    			process.waitFor();
+
+    			InputStream input = new FileInputStream(tempfile);
+    			BufferedReader br = new BufferedReader(new InputStreamReader(input));
+    			String line;
+    			while ((line = br.readLine()) != null) {
+    				System.out.println(line);
+    			}
+    			br.close();
+    			
+    			tempfile.delete();
+   			} catch (IOException e) {
+				e.printStackTrace();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
 		    return super.visit(node);
         }
     }
