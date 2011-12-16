@@ -185,7 +185,7 @@ public class ASTParser {
 		}
 	}
 
-	public void addEnhancedForStatement(EnhancedForStatement statement, ATTRIBUTE attribute) {
+	private void addEnhancedForStatement(EnhancedForStatement statement, ATTRIBUTE attribute) {
 		tokenlist.add(new AttributedToken(new Keyword("for"), attribute, tokenlist.size()));
 		tokenlist.add(new AttributedToken(new Miscellaneous("("), attribute, tokenlist.size()));
 		addSingleVariableDeclaration(statement.getParameter(), attribute);
@@ -195,7 +195,7 @@ public class ASTParser {
 		addStatement(statement.getBody(), attribute);
 	}
 
-	public void addWhileStatement(WhileStatement statement, ATTRIBUTE attribute) {
+	private void addWhileStatement(WhileStatement statement, ATTRIBUTE attribute) {
 		tokenlist.add(new AttributedToken(new Keyword("while"), attribute, tokenlist.size()));
 		tokenlist.add(new AttributedToken(new Miscellaneous("("), attribute, tokenlist.size()));
 		addExpression(statement.getExpression(), attribute);
@@ -204,7 +204,7 @@ public class ASTParser {
 	}
 
 	@SuppressWarnings("unchecked")
-	public void addVariableDeclarationStatement(VariableDeclarationStatement statement, ATTRIBUTE attribute) {
+	private void addVariableDeclarationStatement(VariableDeclarationStatement statement, ATTRIBUTE attribute) {
 		List<IExtendedModifier> modlist = statement.modifiers();
 		if (modlist != null && !modlist.isEmpty()) {
 			addIExtendedModifier(modlist.get(0), attribute);
@@ -224,12 +224,12 @@ public class ASTParser {
 		tokenlist.add(new AttributedToken(new SemiColon(";"), attribute, tokenlist.size()));
 	}
 
-	public void addTypeDeclarationStatement(TypeDeclarationStatement statement, ATTRIBUTE attribute) {
+	private void addTypeDeclarationStatement(TypeDeclarationStatement statement, ATTRIBUTE attribute) {
 		addAbstractTypeDeclaration(statement.getDeclaration(), attribute);
 	}
 
 	@SuppressWarnings("unchecked")
-	public void addTryStatement(TryStatement statement, ATTRIBUTE attribute) {
+	private void addTryStatement(TryStatement statement, ATTRIBUTE attribute) {
 		tokenlist.add(new AttributedToken(new Keyword("try"), attribute, tokenlist.size()));
 		List<VariableDeclarationExpression> varlist = statement.resources();
 		if (varlist != null && !varlist.isEmpty()) {
@@ -256,13 +256,13 @@ public class ASTParser {
 		}
 	}
 
-	public void addThrowStatement(ThrowStatement statement, ATTRIBUTE attribute) {
+	private void addThrowStatement(ThrowStatement statement, ATTRIBUTE attribute) {
 		tokenlist.add(new AttributedToken(new Keyword("throw"), attribute, tokenlist.size()));
 		addExpression(statement.getExpression(), attribute);
 		tokenlist.add(new AttributedToken(new SemiColon(";"), attribute, tokenlist.size()));
 	}
 
-	public void addSynchronizedStatement(SynchronizedStatement statement, ATTRIBUTE attribute) {
+	private void addSynchronizedStatement(SynchronizedStatement statement, ATTRIBUTE attribute) {
 		tokenlist.add(new AttributedToken(new Keyword("synchronized"), attribute, tokenlist.size()));
 		tokenlist.add(new AttributedToken(new Miscellaneous("("), attribute, tokenlist.size()));
 		addExpression(statement.getExpression(), attribute);
@@ -271,7 +271,7 @@ public class ASTParser {
 	}
 
 	@SuppressWarnings("unchecked")
-	public void addSwtichStatement(SwitchStatement statement, ATTRIBUTE attribute) {
+	private void addSwtichStatement(SwitchStatement statement, ATTRIBUTE attribute) {
 		tokenlist.add(new AttributedToken(new Keyword("switch"), attribute, tokenlist.size()));
 		tokenlist.add(new AttributedToken(new Miscellaneous("("), attribute, tokenlist.size()));
 		addExpression(statement.getExpression(), attribute);
@@ -287,7 +287,7 @@ public class ASTParser {
 		tokenlist.add(new AttributedToken(new Miscellaneous("}"), attribute, tokenlist.size()));
 	}
 
-	public void addSwitchCase(SwitchCase statement, ATTRIBUTE attribute) {
+	private void addSwitchCase(SwitchCase statement, ATTRIBUTE attribute) {
 		if (statement.isDefault()) {
 			tokenlist.add(new AttributedToken(new Keyword("default"), attribute, tokenlist.size()));
 			tokenlist.add(new AttributedToken(new Miscellaneous(":"), attribute, tokenlist.size()));
@@ -299,7 +299,7 @@ public class ASTParser {
 	}
 
 	@SuppressWarnings("unchecked")
-	public void addSuperConstructorInvocation(SuperConstructorInvocation statement, ATTRIBUTE attribute) {
+	private void addSuperConstructorInvocation(SuperConstructorInvocation statement, ATTRIBUTE attribute) {
 		Expression exp = statement.getExpression();
 		if (exp != null) {
 			addExpression(exp, attribute);
@@ -319,7 +319,7 @@ public class ASTParser {
 		tokenlist.add(new AttributedToken(new SemiColon(";"), attribute, tokenlist.size()));
 	}
 
-	public void addReturnStatement(ReturnStatement statement, ATTRIBUTE attribute) {
+	private void addReturnStatement(ReturnStatement statement, ATTRIBUTE attribute) {
 		tokenlist.add(new AttributedToken(new Keyword("return"), attribute, tokenlist.size()));
 		Expression exp = statement.getExpression();
 		if (exp != null) {
@@ -328,13 +328,13 @@ public class ASTParser {
 		tokenlist.add(new AttributedToken(new SemiColon(";"), attribute, tokenlist.size()));
 	}
 
-	public void addLabeledStatement(LabeledStatement statement, ATTRIBUTE attribute) {
+	private void addLabeledStatement(LabeledStatement statement, ATTRIBUTE attribute) {
 		addSimpleName(statement.getLabel(), attribute);
 		tokenlist.add(new AttributedToken(new Miscellaneous(":"), attribute, tokenlist.size()));
 		addStatement(statement.getBody(), attribute);
 	}
 
-	public void addIfStatement(IfStatement statement, ATTRIBUTE attribute) {
+	private void addIfStatement(IfStatement statement, ATTRIBUTE attribute) {
 		tokenlist.add(new AttributedToken(new Keyword("if"), attribute, tokenlist.size()));
 		tokenlist.add(new AttributedToken(new Miscellaneous("("), attribute, tokenlist.size()));
 		addExpression(statement.getExpression(), attribute);
@@ -348,7 +348,7 @@ public class ASTParser {
 	}
 
 	@SuppressWarnings("unchecked")
-	public void addForStatement(ForStatement statement, ATTRIBUTE attribute) {
+	private void addForStatement(ForStatement statement, ATTRIBUTE attribute) {
 		tokenlist.add(new AttributedToken(new Keyword("for"), attribute, tokenlist.size()));
 		tokenlist.add(new AttributedToken(new Miscellaneous("("), attribute, tokenlist.size()));
 		List<Expression> forinit = statement.initializers();
@@ -377,16 +377,16 @@ public class ASTParser {
 		addStatement(statement.getBody(), attribute);
 	}
 
-	public void addExpressionStatement(ExpressionStatement statement, ATTRIBUTE attribute) {
+	private void addExpressionStatement(ExpressionStatement statement, ATTRIBUTE attribute) {
 		addExpression(statement.getExpression(), attribute);
 		tokenlist.add(new AttributedToken(new SemiColon(";"), attribute, tokenlist.size()));
 	}
 
-	public void addEmptyStatement(EmptyStatement statement, ATTRIBUTE attribute) {
+	private void addEmptyStatement(EmptyStatement statement, ATTRIBUTE attribute) {
 		tokenlist.add(new AttributedToken(new SemiColon(";"), attribute, tokenlist.size()));
 	}
 
-	public void addDoStatement(DoStatement statement, ATTRIBUTE attribute) {
+	private void addDoStatement(DoStatement statement, ATTRIBUTE attribute) {
 		tokenlist.add(new AttributedToken(new Keyword("do"), attribute, tokenlist.size()));
 		addStatement(statement.getBody(), attribute);
 		tokenlist.add(new AttributedToken(new Keyword("while"), attribute, tokenlist.size()));
@@ -396,14 +396,14 @@ public class ASTParser {
 		tokenlist.add(new AttributedToken(new SemiColon(";"), attribute, tokenlist.size()));
 	}
 
-	public void addContinueStatement(ContinueStatement statement, ATTRIBUTE attribute) {
+	private void addContinueStatement(ContinueStatement statement, ATTRIBUTE attribute) {
 		tokenlist.add(new AttributedToken(new Keyword("continue"), attribute, tokenlist.size()));
 		addSimpleName(statement.getLabel(), attribute);
 		tokenlist.add(new AttributedToken(new SemiColon(";"), attribute, tokenlist.size()));
 	}
 
 	@SuppressWarnings("unchecked")
-	public void addConstructorInvocation(ConstructorInvocation statement, ATTRIBUTE attribute) {
+	private void addConstructorInvocation(ConstructorInvocation statement, ATTRIBUTE attribute) {
 		List<Type> typelist = statement.typeArguments();
 		if (typelist != null && !typelist.isEmpty()) {
 			addType(typelist.get(0), attribute);
@@ -425,13 +425,13 @@ public class ASTParser {
 		tokenlist.add(new AttributedToken(new Miscellaneous(")"), attribute, tokenlist.size()));
 	}
 
-	public void addBreakStatement(BreakStatement statement, ATTRIBUTE attribute) {
+	private void addBreakStatement(BreakStatement statement, ATTRIBUTE attribute) {
 		tokenlist.add(new AttributedToken(new Keyword("break"), attribute, tokenlist.size()));
 		addSimpleName(statement.getLabel(), attribute);
 		tokenlist.add(new AttributedToken(new SemiColon(";"), attribute, tokenlist.size()));
 	}
 
-	public void addBlock(Block body, ATTRIBUTE attribute) {
+	private void addBlock(Block body, ATTRIBUTE attribute) {
 		tokenlist.add(new AttributedToken(new Miscellaneous("{"), attribute, tokenlist.size()));
 		for (Object statement : body.statements()) {
 			addStatement((Statement)statement, attribute);
@@ -439,7 +439,7 @@ public class ASTParser {
 		tokenlist.add(new AttributedToken(new Miscellaneous("}"), attribute, tokenlist.size()));
 	}
 
-	public void addAssertStatement(AssertStatement statement, ATTRIBUTE attribute) {
+	private void addAssertStatement(AssertStatement statement, ATTRIBUTE attribute) {
 		tokenlist.add(new AttributedToken(new Keyword("assert"), attribute, tokenlist.size()));
 		addExpression((Expression)statement.getExpression(), attribute);
 		Expression message = statement.getMessage();
@@ -462,7 +462,7 @@ public class ASTParser {
 		}
 	}
 
-	public void addExpression(Expression expression, ATTRIBUTE attribute) {
+	private void addExpression(Expression expression, ATTRIBUTE attribute) {
 		switch(expression.getNodeType()) {
 		case ASTNode.NORMAL_ANNOTATION:
 		case ASTNode.MARKER_ANNOTATION:
