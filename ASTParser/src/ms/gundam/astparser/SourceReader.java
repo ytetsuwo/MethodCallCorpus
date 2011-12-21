@@ -114,7 +114,7 @@ public class SourceReader {
 					parser.addStatement((Statement)statement, ATTRIBUTE.NORMAL);
 				}
 			}
-		    StringBuffer sourcestr = new StringBuffer(node.getReturnType2() == null ? "" :  node.getReturnType2() + " ");
+		    StringBuilder sourcestr = new StringBuilder(node.getReturnType2() == null ? "" :  node.getReturnType2() + " ");
 		    sourcestr.append(node.getName().getFullyQualifiedName());
 		    sourcestr.append("(){");
     		for (Token token : parser.getTokens()) {
@@ -128,33 +128,8 @@ public class SourceReader {
     			}
     		}
     		sourcestr.append("}\n");
-    		try {
-    			File tempfile = File.createTempFile("ast", ".java");
-    			OutputStream output = new FileOutputStream(tempfile);
-    			BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(output));
-    			writer.write(sourcestr.toString());
-    			writer.close();
+    		System.out.print(Formatter.format(sourcestr.toString()));
 
-    			String[] cmdarray = {"/Users/tetsuo/bin/astyle", "-npUH", "--mode=java", tempfile.getAbsolutePath()};
-    			ProcessBuilder b = new ProcessBuilder(cmdarray);
-    			b.redirectErrorStream(true);
-    			Process process = b.start();
-    			process.waitFor();
-
-    			InputStream input = new FileInputStream(tempfile);
-    			BufferedReader br = new BufferedReader(new InputStreamReader(input));
-    			String line;
-    			while ((line = br.readLine()) != null) {
-    				System.out.println(line);
-    			}
-    			br.close();
-    			
-    			tempfile.delete();
-   			} catch (IOException e) {
-				e.printStackTrace();
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
 		    return super.visit(node);
         }
     }
