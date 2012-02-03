@@ -677,8 +677,9 @@ public class ASTParser {
 		if (exp != null) {
 			addExpression(exp, attribute);
 			tokenlist.add(new AttributedToken(new Miscellaneous("."), attribute, tokenlist.size()));
+
 		}
-		List<Type> typelist = expression.typeArguments();
+ 		List<Type> typelist = expression.typeArguments();
 		if (typelist != null && !typelist.isEmpty()) {
 			tokenlist.add(new AttributedToken(new Miscellaneous("<"), attribute, tokenlist.size()));
 			addType(typelist.get(0), attribute);

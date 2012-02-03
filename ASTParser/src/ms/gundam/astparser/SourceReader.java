@@ -1,34 +1,30 @@
 package ms.gundam.astparser;
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.List;
-
-import ms.gundam.astparser.token.Token;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
-import org.eclipse.jdt.core.dom.MethodDeclaration;
-import org.eclipse.jdt.core.dom.Block;
-import org.eclipse.jdt.core.dom.Statement;
-import org.eclipse.jdt.core.dom.Assignment;
-import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.IBinding;
-
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.QualifiedName;
+import org.eclipse.jdt.core.dom.SimpleName;;
 
 /**
  *  
@@ -36,78 +32,152 @@ import org.eclipse.jdt.core.dom.IBinding;
  *
  */
 public class SourceReader {
+    //private List<AttributedToken> list = new ArrayList<AttributedToken>();
+	private String myClassname = null; 
+	private DB db;
+	private int index = 1;
 
-    private final String sourcecode;
-    private List<AttributedToken> list = new ArrayList<AttributedToken>(); 
+    public void read(File file) {
+		StringBuffer sb = new StringBuffer();
+		String pathname = null;
+		String packagename = null;
+		try {
+			BufferedReader br;
+			br = new BufferedReader(new InputStreamReader( new FileInputStream(file)));
+			String line;
+			Pattern p = Pattern.compile("package (.*);");
+			boolean matchPackage = false;
+			while ((line = br.readLine()) != null){
+				if (!matchPackage) {
+					Matcher m = p.matcher(line);
+					if (m.matches()) {
+						packagename = m.group(1);
+						Matcher match = Pattern.compile("\\.").matcher(packagename);
+						pathname = match.replaceAll("/");
+						matchPackage = true;
+					}
+				}
+			  	sb.append(line+"\n");
+			}
+		} catch (FileNotFoundException e) {
+		    System.err.println("File " + file.getAbsolutePath() + " not found.");
+	    	System.exit(1);
+		} catch (IOException e) {
+		    System.err.println("File " + file.getAbsolutePath() + " I/O Error.");
+	    	System.exit(1);
+		}
 
-    public SourceReader(String sourcecode) {
-    	this.sourcecode = sourcecode;
-    }
-
-    public void read() {
 		ASTParser parser = ASTParser.newParser(AST.JLS4);
 		parser.setResolveBindings(true);
 		parser.setBindingsRecovery(true);
-		parser.setEnvironment(null, null, null, true);
-		parser.setUnitName("Hello.java");
-		parser.setSource(sourcecode.toCharArray());
-    
-		CompilationUnit unit = (CompilationUnit) parser.createAST(new NullProgressMonitor());
-    
-		unit.accept(new ASTVisitorImpl());
+		Matcher matchpath;
+		if (pathname != null) {
+			String quotepath = java.util.regex.Pattern.quote(pathname);
+			matchpath = Pattern.compile(quotepath+"/"+file.getName()).matcher(file.getAbsolutePath());
+		} else {
+			matchpath = Pattern.compile(file.getName()).matcher(file.getAbsolutePath());
+		}
+		String sourcepath[]  = new String[1];
+		sourcepath[0] = matchpath.replaceAll("");
+
+		String classname[] = file.getName().split("\\.java");
+//		Pattern.compile("\\.java$").matcher(file.getName()).replaceFirst("");
+		if (packagename != null)
+			myClassname = packagename + "." +  classname[0];
+		else
+			myClassname = classname[0];
+
+		parser.setEnvironment(null, sourcepath, null, true);
+		parser.setUnitName(file.getName());
+		parser.setSource(sb.toString().toCharArray());
+
+		try {
+			CompilationUnit unit = (CompilationUnit) parser.createAST(new NullProgressMonitor());
+			unit.accept(new ASTVisitorImpl());
+		} catch (IllegalStateException e) {
+			e.printStackTrace();
+			return;
+		}
     }
+
+    private void regist(final File file) {
+		// ディレクトリの場合
+		if (file.isDirectory()) {
+			File[] subfiles = file.listFiles();
+			for (int i = 0; i < subfiles.length; i++) {
+				regist(subfiles[i]);
+			}
+		}
+
+		// ファイルの場合
+		else if (file.isFile()) {
+			if (file.getName().endsWith(".java")) {
+				System.out.println(index + " Reading " + file.getAbsolutePath() + " . . .");
+				index++;
+				read(file);
+			}
+		}
+		// ディレクトリでもファイルでもない場合は不正
+		else {
+			System.err.println(file.getAbsolutePath() + " is invaild");
+			System.exit(0);
+		}
+	}
 
     public static void main(String args[]) {
     	if (args.length == 0) {
-	    	System.out.println("Specify a source file.");
+	    	System.out.println("Specify a source file or directory.");
 	    	System.exit(1);
     	}
-		try {
-		    System.out.println("Reading " + args[0] + " . . .");
-		    BufferedReader br = new BufferedReader(new InputStreamReader( new FileInputStream(args[0])));
-		    StringBuffer sb = new StringBuffer();
-		    String line;
-		    while ((line = br.readLine()) != null){
-		    	sb.append(line+"\n");
-	    	}
-		    SourceReader sr = new SourceReader(sb.toString());
-		    sr.read();
-		} catch (FileNotFoundException e) {
-		    System.out.println("File " + args[0] + " not found.");
-	    	System.exit(1);
-		} catch (IOException e){
-		    System.out.println("IO Exception !");
-	    	System.exit(1);
-		}
+		SourceReader sr = new SourceReader();
+		sr.db = new DB();
+    	sr.db.open(new File(args[0]), false);
+		sr.regist(new File(args[1]));
     }
 
     /**
      * VisitorパターンでASTの内容を表示する
      */
     class ASTVisitorImpl extends ASTVisitor {
-/*
-		@Override
-        public boolean visit(Assignment node) {
-    		System.out.print("ASSIGN***: ");
-		    Expression left = node.getLeftHandSide();
-		    Expression right = node.getRightHandSide();
-		    String lefttype = left.toString();
-		    String righttype = right.toString();
-		    if (left instanceof Name) {
-		    	IBinding lbind = ((Name)left).resolveBinding();
-		    	lefttype = lbind.toString();
-		    }
-		    if (right instanceof Name) {
-		    	IBinding rbind = ((Name)right).resolveBinding();
-		    	righttype = rbind.toString();
-		    }
-		    System.out.println(lefttype + " = " + righttype);
-	    	return super.visit(node);
+    	private String prevclassname = "";
+    	private String prevmethodname = "";
+    	
+		public boolean visit(MethodInvocation node) {
+			String classname = "";
+    		Expression exp = node.getExpression();
+    		if (exp != null) {
+    			ITypeBinding type = exp.resolveTypeBinding();
+    			if (type != null) {
+					if (type.isArray()) {
+						classname = "!ARRAY";
+					} else {
+						classname = type.getQualifiedName();
+					}
+    			} else {
+    				if (exp.getNodeType() == ASTNode.SIMPLE_NAME) {
+						classname = ((SimpleName)exp).getIdentifier();
+    					IBinding bind = ((SimpleName)exp).resolveBinding();
+    					if (bind != null) {
+    						System.out.print("@@@");
+    					}
+    				} else if (exp.getNodeType() == ASTNode.QUALIFIED_NAME) {
+						classname = ((QualifiedName)exp).getFullyQualifiedName();
+    				} else
+    					;
+    			}
+    		} else {
+    			classname = myClassname;
+    		}
+    		db.put(prevclassname, prevmethodname, classname, node.getName().toString());
+    		prevclassname = classname;
+    		prevmethodname = node.getName().toString();
+			return super.visit(node);
 		}
-*/
-    	@Override
+
+		@Override
     	public boolean visit(MethodDeclaration node) {
-	    	Block body = node.getBody();
+/*
+ 	    	Block body = node.getBody();
 	    	ms.gundam.astparser.ASTParser parser = new ms.gundam.astparser.ASTParser();
 		    if (body != null) {
 				for (Object statement : body.statements()) {
@@ -129,8 +199,17 @@ public class SourceReader {
     		}
     		sourcestr.append("}\n");
     		System.out.print(Formatter.format(sourcestr.toString()));
+ */
+//			System.out.println(node.getName().getFullyQualifiedName() + "{");
 
 		    return super.visit(node);
         }
+
+		@Override
+		public void endVisit(MethodDeclaration node) {
+//			System.out.println("}");
+			super.endVisit(node);
+		}
+		
     }
 }

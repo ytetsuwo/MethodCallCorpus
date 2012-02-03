@@ -41,6 +41,7 @@ public class SourceReader {
     int aa[];
     aa = new List<Node, Node2>[5][i][][][]  {1,2,3,4,5};
 	if (args.length == 0) {
+		aa.toString();
 	    System.out.println("Specify a source file.");
 	    System.exit(1);
 	}
@@ -73,8 +74,7 @@ public class SourceReader {
      */
     public void read() {
 	System.out.println("read() - start");
-    
-	ASTParser parser = ASTParser.newParser(AST.JLS3);
+	ASTParser parser = org.eclipse.jdt.core.dom.ASTParser.newParser(AST.JLS3);
 	// parser.setResolveBindings(true);
 	parser.setSource(element.toCharArray());
     
