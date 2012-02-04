@@ -134,7 +134,6 @@ public class SourceReader {
 		sr.db = new DB();
     	sr.db.open(new File(args[0]), false);
 		sr.regist(new File(args[1]));
-		sr.db.close();
     }
 
     /**
