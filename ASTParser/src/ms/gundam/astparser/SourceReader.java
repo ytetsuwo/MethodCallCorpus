@@ -211,6 +211,8 @@ public class SourceReader {
 			String prevmethodname = null;
 
 			//			System.out.println("}");
+			if (statementList == null)
+				return;
 			for (Value statement : statementList) {
 				if (prevclassname != null) {
 					db.put(prevclassname, prevmethodname, statement.getClassname(), statement.getMethodname());
