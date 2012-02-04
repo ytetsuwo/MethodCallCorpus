@@ -140,7 +140,7 @@ public class SourceReader {
      * VisitorパターンでASTの内容を表示する
      */
     class ASTVisitorImpl extends ASTVisitor {
-    	private List<Value> statementList = null;
+    	private List<Value> statementList;
     
 		public boolean visit(MethodInvocation node) {
 			String classname = "";
@@ -168,9 +168,7 @@ public class SourceReader {
     		} else {
     			classname = myClassname;
     		}
-    		if (statementList != null) {
-    			statementList.add(new Value(classname, node.getName().toString()));
-    		}
+    		statementList.add(new Value(classname, node.getName().toString()));
 			return super.visit(node);
 		}
 
@@ -218,8 +216,6 @@ public class SourceReader {
 				prevclassname = statement.getClassname();
 				prevmethodname = statement.getMethodname();
 			}
-			
-			statementList = null;
 			super.endVisit(node);
 		}
 		
