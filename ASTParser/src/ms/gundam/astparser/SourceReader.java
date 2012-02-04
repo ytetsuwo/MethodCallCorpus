@@ -207,18 +207,17 @@ public class SourceReader {
 
 		@Override
 		public void endVisit(MethodDeclaration node) {
-			String prevclassname = null;
-			String prevmethodname = null;
-
-			//			System.out.println("}");
+//			System.out.println("}");
 			if (statementList == null)
 				return;
-			for (Value statement : statementList) {
-				if (prevclassname != null) {
-					db.put(prevclassname, prevmethodname, statement.getClassname(), statement.getMethodname());
+
+			final int size = statementList.size();
+			for (int i = 0; i < size - 1; i++) {
+				Value statement = statementList.get(i);
+				for (int j = i + 1; j < size; j++) {
+					Value afterStatement = statementList.get(j);
+					db.put(statement.getClassname(), statement.getMethodname(), afterStatement.getClassname(), afterStatement.getMethodname());
 				}
-				prevclassname = statement.getClassname();
-				prevmethodname = statement.getMethodname();
 			}
 			
 			statementList = null;
