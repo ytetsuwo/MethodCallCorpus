@@ -41,6 +41,7 @@ public class SourceReader {
 		StringBuffer sb = new StringBuffer();
 		String pathname = null;
 		String packagename = null;
+		final String separator = File.separator.equals("\\") ? "\\\\" : File.separator;
 		try {
 			BufferedReader br;
 			br = new BufferedReader(new InputStreamReader( new FileInputStream(file)));
@@ -53,7 +54,7 @@ public class SourceReader {
 					if (m.matches()) {
 						packagename = m.group(1);
 						Matcher match = Pattern.compile("\\.").matcher(packagename);
-						pathname = match.replaceAll("/");
+						pathname = match.replaceAll(separator);
 						matchPackage = true;
 					}
 				}
@@ -73,7 +74,7 @@ public class SourceReader {
 		Matcher matchpath;
 		if (pathname != null) {
 			String quotepath = java.util.regex.Pattern.quote(pathname);
-			matchpath = Pattern.compile(quotepath+"/"+file.getName()).matcher(file.getAbsolutePath());
+			matchpath = Pattern.compile(quotepath+separator+file.getName()).matcher(file.getAbsolutePath());
 		} else {
 			matchpath = Pattern.compile(file.getName()).matcher(file.getAbsolutePath());
 		}
