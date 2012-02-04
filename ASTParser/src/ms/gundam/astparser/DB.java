@@ -69,17 +69,7 @@ public class DB {
         return true;
 	}
 	
-	public boolean put(String keyclassname, String keymethodname, String classname, String methodname) {
-       // Need a serial binding for the data
-
-/*
-        Value theValue = new Value();
-        theValue.setClassname(classname);
-        theValue.setMethodname(methodname);
-        theValue.setCount(1);
-*/
-		
-        final String keyName = keyclassname + "#" + keymethodname + "!" + classname + "#"+ methodname;
+    private boolean put(Database database, String keyName) {
         final EntryBinding<Integer> IntegerBinding = TupleBinding.getPrimitiveBinding(Integer.class);
 
         DatabaseEntry theKey = null;
@@ -102,11 +92,22 @@ public class DB {
         Integer myInt = new Integer(count);
         IntegerBinding.objectToEntry(myInt, theData);
         
-        // Put it in the database. These puts are transactionally
-        // protected (we're using autocommit).
-        afterDb.put(null, theKey, theData);
+        OperationStatus ret = database.put(null, theKey, theData);
 
-		return true;
+        if (ret == OperationStatus.SUCCESS)
+        	return true;
+        else
+        	return false;
+    }
+	public boolean put(String keyclassname, String keymethodname, String classname, String methodname) {
+        String keyName = keyclassname + "#" + keymethodname + "!" + classname + "#"+ methodname;
+        boolean ret = put(afterDb, keyName);
+        keyName = classname + "#" + methodname + "!" + keyclassname + "#"+ keymethodname;
+        boolean ret2 = put(beforeDb, keyName);
+        if (ret && ret2)
+        	return true;
+        else
+        	return false;
 	}
 	
 	public Integer get(String keyclassname, String keymethodname) {
