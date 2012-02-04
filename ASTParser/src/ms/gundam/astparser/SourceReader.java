@@ -41,7 +41,6 @@ public class SourceReader {
 		StringBuffer sb = new StringBuffer();
 		String pathname = null;
 		String packagename = null;
-		final String separator = File.separator.equals("\\") ? "\\\\" : File.separator;
 		try {
 			BufferedReader br;
 			br = new BufferedReader(new InputStreamReader( new FileInputStream(file)));
@@ -54,7 +53,7 @@ public class SourceReader {
 					if (m.matches()) {
 						packagename = m.group(1);
 						Matcher match = Pattern.compile("\\.").matcher(packagename);
-						pathname = match.replaceAll(separator);
+						pathname = match.replaceAll("/");
 						matchPackage = true;
 					}
 				}
@@ -74,7 +73,7 @@ public class SourceReader {
 		Matcher matchpath;
 		if (pathname != null) {
 			String quotepath = java.util.regex.Pattern.quote(pathname);
-			matchpath = Pattern.compile(quotepath+separator+file.getName()).matcher(file.getAbsolutePath());
+			matchpath = Pattern.compile(quotepath+"/"+file.getName()).matcher(file.getAbsolutePath());
 		} else {
 			matchpath = Pattern.compile(file.getName()).matcher(file.getAbsolutePath());
 		}
@@ -140,8 +139,9 @@ public class SourceReader {
      * VisitorパターンでASTの内容を表示する
      */
     class ASTVisitorImpl extends ASTVisitor {
-    	private List<Value> statementList;
-    
+    	private String prevclassname = "";
+    	private String prevmethodname = "";
+    	
 		public boolean visit(MethodInvocation node) {
 			String classname = "";
     		Expression exp = node.getExpression();
@@ -168,7 +168,9 @@ public class SourceReader {
     		} else {
     			classname = myClassname;
     		}
-    		statementList.add(new Value(classname, node.getName().toString()));
+    		db.put(prevclassname, prevmethodname, classname, node.getName().toString());
+    		prevclassname = classname;
+    		prevmethodname = node.getName().toString();
 			return super.visit(node);
 		}
 
@@ -199,23 +201,13 @@ public class SourceReader {
     		System.out.print(Formatter.format(sourcestr.toString()));
  */
 //			System.out.println(node.getName().getFullyQualifiedName() + "{");
-			statementList = new ArrayList<Value>();
+
 		    return super.visit(node);
         }
 
 		@Override
 		public void endVisit(MethodDeclaration node) {
-			String prevclassname = null;
-			String prevmethodname = null;
-
-			//			System.out.println("}");
-			for (Value statement : statementList) {
-				if (prevclassname != null) {
-					db.put(prevclassname, prevmethodname, statement.getClassname(), statement.getMethodname());
-				}
-				prevclassname = statement.getClassname();
-				prevmethodname = statement.getMethodname();
-			}
+//			System.out.println("}");
 			super.endVisit(node);
 		}
 		

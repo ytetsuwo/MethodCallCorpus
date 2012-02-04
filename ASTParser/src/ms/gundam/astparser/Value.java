@@ -5,12 +5,7 @@ import java.io.Serializable;
 public class Value implements Serializable {
 	private String classname;
 	private String methodname;
-
-	public Value(String classname, String methodname) {
-		super();
-		this.classname = classname;
-		this.methodname = methodname;
-	}
+ 	private int count;
 	public String getClassname() {
 		return classname;
  	}
@@ -22,5 +17,11 @@ public class Value implements Serializable {
 	}
 	public void setMethodname(String methodname) {
 		this.methodname = methodname;
+	}
+	public int getCount() {
+		return count;
+	}
+	public void setCount(int count) {
+		this.count = count;
 	}
 }
