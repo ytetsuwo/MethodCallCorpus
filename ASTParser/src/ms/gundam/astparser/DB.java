@@ -115,13 +115,23 @@ public class DB {
         	return false;
 	}
 	
-	public List<Value> get(String keyclassname, String keymethodname) {
+	/**
+	 * @param keyclassname クラス名
+	 * @param keymethodname メソッド名
+	 * @param which どっちのデータベースを使うかを指定する．trueならafter，falseならbefore
+	 * @return Valueのリスト
+	 */
+	public List<Value> get(String keyclassname, String keymethodname, boolean which) {
 		List<Value> list = new ArrayList<Value>();
 		final String keyName = keyclassname + MethodSeparator + keymethodname;
         final EntryBinding<Integer> IntegerBinding = TupleBinding.getPrimitiveBinding(Integer.class);
 		Cursor cursor = null;
 		try {
-			cursor = afterDb.openCursor(null, null);
+			if (which) {
+				cursor = afterDb.openCursor(null, null);
+			} else {
+				cursor = beforeDb.openCursor(null, null);
+			}
 			if (cursor == null) {
 				System.err.println("Cannot get cursor");
 				return list;
@@ -139,17 +149,18 @@ public class DB {
 				while (ret == OperationStatus.SUCCESS) {
 					String keyString = new String(theKey.getData(), "UTF-8");
 					int count = IntegerBinding.entryToObject(theData);
-System.out.println(count + keyString);
-					String[] valueString = keyString.split(MethodSeparator);
+//System.out.println(count + keyString);
+					String[] valueString = keyString.split(RelationSeparator);
 					Value value = new Value();
-					if (valueString.length != 1) {
-						String[] name = valueString[1].split(RelationSeparator);
+					if (!valueString[0].equals(keyName))
+						break;
+					if (valueString.length == 2) {
+						String[] name = valueString[1].split(MethodSeparator);
 						value.setClassname(name[0]);
 						value.setMethodname(name[1]);
 						list.add(value);
 					}
 					value.setCount(count);
-//					count+= value.getCount();
 					ret = cursor.getNext(theKey, theData, LockMode.DEFAULT);
 				}
 			} 

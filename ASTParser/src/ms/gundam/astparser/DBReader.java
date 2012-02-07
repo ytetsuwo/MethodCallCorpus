@@ -1,6 +1,7 @@
 package ms.gundam.astparser;
 
 import java.io.File;
+import java.util.Collections;
 import java.util.List;
 
 public class DBReader {
@@ -21,7 +22,8 @@ public class DBReader {
 	private void read(File dbDir, String classname, String methodname) {
 		DB db = new DB();
 		db.open(dbDir, true);
-		List<Value> list = db.get(classname, methodname);
+		List<Value> list = db.get(classname, methodname, false);
+		Collections.sort(list);
 		for (Value v : list) {
 			System.out.println(v.toString());
 		}

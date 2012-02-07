@@ -2,7 +2,7 @@ package ms.gundam.astparser;
 
 import java.io.Serializable;
 
-public class Value implements Serializable {
+public class Value implements Serializable, Comparable<Value> {
 	private static final long serialVersionUID = 1L;
 	private String classname;
 	private String methodname;
@@ -36,6 +36,16 @@ public class Value implements Serializable {
 	}
 	@Override
 	public String toString() {
-		return count + " " + classname + "# " + methodname;
+		return count + " " + classname + "#" + methodname;
+	}
+	@Override
+	public int compareTo(Value o) {
+		if (this.count == o.count) {
+			return 0;
+		} else if (this.count > o.count) {
+			return -1;
+		} else {
+			return 1;
+		}
 	}
 }
