@@ -150,7 +150,7 @@ public class SourceReader {
     			ITypeBinding type = exp.resolveTypeBinding();
     			if (type != null) {
 					if (type.isArray()) {
-						classname = "!ARRAY";
+						classname = DB.ARRAYNAME;
 					} else {
 						classname = type.getQualifiedName();
 					}

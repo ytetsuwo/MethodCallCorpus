@@ -3,6 +3,8 @@ package ms.gundam.astparser;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.sleepycat.bind.EntryBinding;
 import com.sleepycat.bind.serial.SerialBinding;
@@ -20,11 +22,14 @@ import com.sleepycat.je.LockMode;
 import com.sleepycat.je.OperationStatus;
 
 public class DB {
+	public static final String ARRAYNAME = "@ARRAY";
+    private static final String RelationSeparator = "!";
+    private static final String MethodSeparator = "#";
 	private Environment myEnv;
     private Database afterDb;
     private Database beforeDb;
     private Database classCatalogDb;
-
+    
     // Needed for object serialization
     private StoredClassCatalog classCatalog;
     private EntryBinding<Value> dataBinding;
@@ -100,9 +105,9 @@ public class DB {
         	return false;
     }
 	public boolean put(String keyclassname, String keymethodname, String classname, String methodname) {
-        String keyName = keyclassname + "#" + keymethodname + "!" + classname + "#"+ methodname;
+        String keyName = keyclassname + MethodSeparator + keymethodname + RelationSeparator + classname + MethodSeparator+ methodname;
         boolean ret = put(afterDb, keyName);
-        keyName = classname + "#" + methodname + "!" + keyclassname + "#"+ keymethodname;
+        keyName = classname + MethodSeparator + methodname + RelationSeparator + keyclassname + MethodSeparator + keymethodname;
         boolean ret2 = put(beforeDb, keyName);
         if (ret && ret2)
         	return true;
@@ -110,24 +115,41 @@ public class DB {
         	return false;
 	}
 	
-	public Integer get(String keyclassname, String keymethodname) {
-		final String keyName = keyclassname + "#" + keymethodname;
+	public List<Value> get(String keyclassname, String keymethodname) {
+		List<Value> list = new ArrayList<Value>();
+		final String keyName = keyclassname + MethodSeparator + keymethodname;
         final EntryBinding<Integer> IntegerBinding = TupleBinding.getPrimitiveBinding(Integer.class);
-		Integer count = null;
 		Cursor cursor = null;
 		try {
 			cursor = afterDb.openCursor(null, null);
-
+			if (cursor == null) {
+				System.err.println("Cannot get cursor");
+				return list;
+			}
 			DatabaseEntry theKey = new DatabaseEntry(keyName.getBytes("UTF-8"));
 			DatabaseEntry theData = new DatabaseEntry();
     
-			OperationStatus ret = cursor.getSearchKey(theKey, theData, LockMode.DEFAULT);
-
-			if (cursor.count() > 1) {
+			OperationStatus ret = cursor.getSearchKeyRange(theKey, theData, LockMode.DEFAULT);
+			if (ret != OperationStatus.SUCCESS) {
+				System.err.println("No such Key in the DB " + keyName);
+				return list;
+			}
+//System.out.println(cursor.count());
+			if (cursor.count() > 0) {
 				while (ret == OperationStatus.SUCCESS) {
-					String keyString = new String(theKey.getData(), "UTF-8"); 
-					count = count + IntegerBinding.entryToObject(theData);
-System.out.println(keyString + count);					
+					String keyString = new String(theKey.getData(), "UTF-8");
+					int count = IntegerBinding.entryToObject(theData);
+System.out.println(count + keyString);
+					String[] valueString = keyString.split(MethodSeparator);
+					Value value = new Value();
+					if (valueString.length != 1) {
+						String[] name = valueString[1].split(RelationSeparator);
+						value.setClassname(name[0]);
+						value.setMethodname(name[1]);
+						list.add(value);
+					}
+					value.setCount(count);
+//					count+= value.getCount();
 					ret = cursor.getNext(theKey, theData, LockMode.DEFAULT);
 				}
 			} 
@@ -136,7 +158,7 @@ System.out.println(keyString + count);
 		} finally {
 			cursor.close();
 		}
-		return count;
+		return list;
 	}
 
 	public void close() {
