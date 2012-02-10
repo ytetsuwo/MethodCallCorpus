@@ -2,14 +2,10 @@ package ms.gundam.astparser;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
 import com.sleepycat.bind.EntryBinding;
-import com.sleepycat.bind.serial.SerialBinding;
-import com.sleepycat.bind.serial.StoredClassCatalog;
-import com.sleepycat.bind.tuple.IntegerBinding;
 import com.sleepycat.bind.tuple.TupleBinding;
 import com.sleepycat.je.Cursor;
 import com.sleepycat.je.Database;
@@ -31,8 +27,8 @@ public class DB {
     private Database classCatalogDb;
     
     // Needed for object serialization
-    private StoredClassCatalog classCatalog;
-    private EntryBinding<Value> dataBinding;
+//    private StoredClassCatalog classCatalog;
+//    private EntryBinding<Value> dataBinding;
 
     public boolean open(File envHome, boolean readOnly) {
         // Database and environment configuration omitted for brevity
@@ -68,8 +64,8 @@ public class DB {
         classCatalogDb = myEnv.openDatabase(null, "ClassCatalogDB", myDbConfig);
 
         // Create our class catalog
-        classCatalog = new StoredClassCatalog(classCatalogDb);
-        dataBinding = new SerialBinding<Value>(classCatalog, Value.class);
+//        classCatalog = new StoredClassCatalog(classCatalogDb);
+//        dataBinding = new SerialBinding<Value>(classCatalog, Value.class);
         
         return true;
 	}
