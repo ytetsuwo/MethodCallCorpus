@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+   <extension
+   		 id="ms.gundam.astparser.ESCorpusPlugin"
+         point="org.eclipse.jdt.ui.javaCompletionProposalComputer">
+     <javaCompletionProposalComputer
+     	activate="true"
+     	categoryId="org.eclipse.jdt.ui.defaultProposalCategory"
+     	class="ms.gundam.astparser.plugin.ASTParserProposalComputer">
+     </javaCompletionProposalComputer>     	
+   </extension>
+</plugin>
