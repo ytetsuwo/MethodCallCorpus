@@ -16,6 +16,7 @@ import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.IBinding;
@@ -23,7 +24,10 @@ import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.QualifiedName;
-import org.eclipse.jdt.core.dom.SimpleName;;
+import org.eclipse.jdt.core.dom.QualifiedType;
+import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.SimpleType;
+import org.eclipse.jdt.core.dom.Type;
 
 /**
  *  
@@ -117,10 +121,9 @@ public class SourceReader {
 				read(file);
 			}
 		}
-		// ディレクトリでもファイルでもない場合は不正
+		// ディレクトリでもファイルでもない場合は不正と表示し，無視
 		else {
 			System.err.println(file.getAbsolutePath() + " is invaild");
-			System.exit(0);
 		}
 	}
 
@@ -142,6 +145,35 @@ public class SourceReader {
     class ASTVisitorImpl extends ASTVisitor {
     	private List<Value> statementList = null;
     
+    	public boolean visit(ClassInstanceCreation node) {
+			String classname = "";
+    		Type classtype = node.getType();
+    		if (classtype != null) {
+    			ITypeBinding type = classtype.resolveBinding();
+    			if (type != null) {
+					if (type.isArray()) {
+						classname = DB.ARRAYNAME;
+					} else {
+						classname = type.getQualifiedName();
+					}
+    			} else {
+    				if (classtype.isSimpleType()) {
+						classname = ((SimpleType)classtype).getName().getFullyQualifiedName();
+    				} else if (classtype.isQualifiedType()) {
+						classname = ((QualifiedType)classtype).getName().getFullyQualifiedName();
+    				} else
+    					;
+    			}
+    		} else {
+    			System.err.println("cannot get type of new statement.");
+    			System.exit(1);
+    		}
+    		if (statementList != null) {
+    			statementList.add(new Value(classname, "<init>"));
+    		}
+			return super.visit(node);
+    	}
+    	
 		public boolean visit(MethodInvocation node) {
 			String classname = "";
     		Expression exp = node.getExpression();
@@ -217,6 +249,7 @@ public class SourceReader {
 				for (int j = i + 1; j < size; j++) {
 					Value afterStatement = statementList.get(j);
 					db.put(statement.getClassname(), statement.getMethodname(), afterStatement.getClassname(), afterStatement.getMethodname());
+//					System.out.println(statement.getClassname()+"#"+statement.getMethodname()+" "+afterStatement.getClassname()+"#"+afterStatement.getMethodname());
 				}
 			}
 			
