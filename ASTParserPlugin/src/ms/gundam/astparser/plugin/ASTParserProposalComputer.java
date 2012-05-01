@@ -96,8 +96,10 @@ public class ASTParserProposalComputer implements IJavaCompletionProposalCompute
 	private List<Value> fetchSource(List<Value> list) {
 		final List<Value> ret = new ArrayList<Value>();
 		Value key = list.get(list.size()-1);
+System.out.println(key.getClassname() + "#" + key.getMethodname());
 		List<Value> result = db.get(key.getClassname(), key.getMethodname(), true);
 		for (Value v : result) {
+//System.out.println("\t"+ v.getClassname() + "#" + v.getMethodname());
 			ret.add(v);
 		}
 		return ret;
@@ -137,7 +139,7 @@ public class ASTParserProposalComputer implements IJavaCompletionProposalCompute
 		MethodVisitor visitor= new MethodVisitor();
 		unit.accept(visitor);
 
-		if (visitor.getStatementList() != null) {
+		if (visitor.getStatementList() != null && visitor.getStatementList().size() != 0) {
 			List<Value> proposallist = fetchSource(visitor.getStatementList());
 			Collections.sort(proposallist);
 			for (Value v : proposallist) {
