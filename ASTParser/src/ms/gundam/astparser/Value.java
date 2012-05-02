@@ -4,9 +4,9 @@ import java.io.Serializable;
 
 public class Value implements Serializable, Comparable<Value> {
 	private static final long serialVersionUID = 1L;
-	private String classname;
-	private String methodname;
-	private int count;
+	protected String classname;
+	protected String methodname;
+	protected int count;
 
 	public Value() {
 		super();
