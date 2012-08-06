@@ -2,8 +2,10 @@ package ms.gundam.astparser.plugin;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -181,7 +183,7 @@ System.out.println(key.getClassname()+key.getMethodname());
 			newvalue.setRanking(ranking);
 
 			String keyString = newvalue.getClassname()+"#"+newvalue.getMethodname(); 
-System.out.println(newvalue.getRanking()+":"+ keyString);			
+System.out.println(newvalue.getRanking()+"("+percentage+"%):"+ keyString);			
 
 			if (proposalmap.containsKey(keyString)) {
 				ValuewithRanking value = proposalmap.get(keyString);
@@ -200,6 +202,9 @@ System.out.println(newvalue.getRanking()+":"+ keyString);
 		final int offset = context.getInvocationOffset();
 		IMethod method = null;
 
+		final long start = System.nanoTime();
+
+		
 		try {
 			final IJavaElement element = ((JavaContentAssistInvocationContext)context).getCoreContext().getEnclosingElement();
 			if (element == null) {
@@ -240,14 +245,19 @@ System.out.println(newvalue.getRanking()+":"+ keyString);
 		for (ValuewithRanking v: proposalmap.values()) {
 			proposallist.add(v);
 		}
-		Collections.sort(proposallist);
-
+		Collections.sort(proposallist, new MyComparator());
+		int rank = 1;
 		for (ValuewithRanking v : proposallist) {
 			if (v.getPercentage() != 0) {
-				String str = String.format("%3d: %s.%s", v.getPercentage(), v.getClassname(),v.getMethodname());
+				String str = String.format("%3d(%3d) & %s.%s \\\\", rank++, v.getPercentage(), v.getClassname(),v.getMethodname());
+System.out.println(str);
 				list.add(new CompletionProposal(str, offset, 0, 0, null, str, null, "<pre>"+str+"</pre>"));
 			}
 		}
+
+		final long end = System.nanoTime();
+		final long elapsedTime = end - start;
+		System.out.println("elapsed time: " + elapsedTime / 100000 + " milli seconds.");
 		return list;
 	}
 
@@ -258,3 +268,16 @@ System.out.println(newvalue.getRanking()+":"+ keyString);
 	}
 
 }
+
+class MyComparator implements Comparator<ValuewithRanking> {  
+	@Override
+	public int compare(ValuewithRanking o1, ValuewithRanking o2) {
+		if (o1.getPercentage() == o2.getPercentage()) {
+			return 0;
+		} else if (o1.getPercentage() > o2.getPercentage()) {
+			return -1;
+		} else {
+			return 1;
+		}
+	}
+}  
