@@ -19,11 +19,6 @@ import ms.gundam.astparser.DB;
 import ms.gundam.astparser.Value;
 import ms.gundam.astparser.ValuewithRanking;
 
-import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.jdt.core.ICompilationUnit;
-import org.eclipse.jdt.core.IJavaElement;
-import org.eclipse.jdt.core.IMethod;
-import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTParser;
@@ -43,7 +38,7 @@ import org.eclipse.jdt.core.dom.Type;
 
 public class DBReaderMulti {
 	private String myClassname = null;
-	final private String directory = "/DB/mDB";
+	final private static String directory = "/DB/mDB";
 	private DB db;
 
     class ASTVisitorImpl extends ASTVisitor {
@@ -278,6 +273,9 @@ System.out.println(newvalue.getRanking()+"("+percentage+"%):"+ keyString);
 	}
 
 	private void getList(File file) {
+		db = new DB();
+		db.open(new File(directory), true);
+
 		final long start = System.nanoTime();
 		
 		StringBuffer sb = new StringBuffer();
@@ -362,6 +360,8 @@ System.out.println(str);
 		final long end = System.nanoTime();
 		final long elapsedTime = end - start;
 		System.out.println("elapsed time: " + elapsedTime / 100000 + " milli seconds.");
+		
+		db.close();
 	}
 }
 
