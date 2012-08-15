@@ -122,7 +122,13 @@ public class DBReaderMulti {
 			// 先頭からnトークンいれた後にちゃんと候補がでるかしらべる
 			int x = n - 1 < getStatementList().size() ? (n - 1) : (getStatementList().size() - 1); 
 
-			if (getStatementList().get(x).getClassname().equals(myClassname)) {
+			// 自分と同じクラスは登録してないと出てこないので無視				
+//System.out.println(myClassname.replaceFirst("([^.]*\\.[^.]*\\.).*", "$1"));
+			if (getStatementList().get(x).getClassname().contains(myClassname.replaceFirst("([^.]*\\.[^.]*\\.).*", "$1"))) {
+System.out.print(node.getName().getFullyQualifiedName() + "{");
+System.out.println(getStatementList().get(x).getClassname() + "." + getStatementList().get(x).getMethodname());
+System.out.println("###NG###,-1,");
+System.out.println("}");
 				statementList = null;
 				super.endVisit(node);
 				return;
@@ -146,7 +152,7 @@ System.out.println(getStatementList().get(x).getClassname() + "." + getStatement
 				if (getStatementList().get(x).getClassname().equals(v.getClassname()) &&
 					getStatementList().get(x).getMethodname().equals(v.getMethodname())) {
 System.out.println("***OK***,"+ rank + "," + v.getClassname()+v.getMethodname());
-					String str = String.format("%3d(%3d) & %s.%s \\\\", rank, v.getPercentage(), v.getClassname(),v.getMethodname());
+//					String str = String.format("%3d(%3d) & %s.%s \\\\", rank, v.getPercentage(), v.getClassname(),v.getMethodname());
 //System.out.println(str);
 					flag=true;
 				}
