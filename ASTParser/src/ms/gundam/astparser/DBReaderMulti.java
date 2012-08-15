@@ -250,6 +250,7 @@ System.out.println("}");
     	nlist.add(5);
     	nlist.add(10);
     	nlist.add(15);
+    	nlist.add(20);
     	for (int ntokens : nlist) {
     		oklist = new ArrayList<Integer>();
     		ngcount = 0;
@@ -283,8 +284,8 @@ System.out.println("}");
     public static void main(String args[]) {
 		DBReaderMulti m = new DBReaderMulti();
 		m.db = new DB();
-		m.db.open(new File(directory), true);
-		m.register(new File(args[0]));
+		m.db.open(new File(args[0]), true);
+		m.register(new File(args[1]));
 		m.db.close();
 	}
 
