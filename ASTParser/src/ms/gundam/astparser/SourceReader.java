@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Stack;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -41,59 +42,17 @@ public class SourceReader {
 	private int index = 1;
 
     public void read(File file) {
-		StringBuffer sb = new StringBuffer();
-		String pathname = null;
-		String packagename = null;
-		final String separator = File.separator.equals("\\") ? "\\\\" : File.separator;
-		try {
-			BufferedReader br;
-			br = new BufferedReader(new InputStreamReader( new FileInputStream(file)));
-			String line;
-			Pattern p = Pattern.compile("package (.*);");
-			boolean matchPackage = false;
-			while ((line = br.readLine()) != null){
-				if (!matchPackage) {
-					Matcher m = p.matcher(line);
-					if (m.matches()) {
-						packagename = m.group(1);
-						Matcher match = Pattern.compile("\\.").matcher(packagename);
-						pathname = match.replaceAll(separator);
-						matchPackage = true;
-					}
-				}
-			  	sb.append(line+"\n");
-			}
-		} catch (FileNotFoundException e) {
-		    System.err.println("File " + file.getAbsolutePath() + " not found.");
-	    	System.exit(1);
-		} catch (IOException e) {
-		    System.err.println("File " + file.getAbsolutePath() + " I/O Error.");
-	    	System.exit(1);
-		}
+		FileAnalyzer fileinfo = new FileAnalyzer();
+		fileinfo.analyze(file);
+		myClassname = fileinfo.getFQDN();
+		String[] sourcepath = fileinfo.getSourcepath();
 
 		ASTParser parser = ASTParser.newParser(AST.JLS4);
-		parser.setResolveBindings(true);
-		parser.setBindingsRecovery(true);
-		Matcher matchpath;
-		if (pathname != null) {
-			String quotepath = java.util.regex.Pattern.quote(pathname);
-			matchpath = Pattern.compile(quotepath+separator+file.getName()).matcher(file.getAbsolutePath());
-		} else {
-			matchpath = Pattern.compile(file.getName()).matcher(file.getAbsolutePath());
-		}
-		String sourcepath[]  = new String[1];
-		sourcepath[0] = matchpath.replaceAll("");
-
-		String classname[] = file.getName().split("\\.java");
-//		Pattern.compile("\\.java$").matcher(file.getName()).replaceFirst("");
-		if (packagename != null)
-			myClassname = packagename + "." +  classname[0];
-		else
-			myClassname = classname[0];
-
 		parser.setEnvironment(null, sourcepath, null, true);
 		parser.setUnitName(file.getName());
-		parser.setSource(sb.toString().toCharArray());
+		parser.setResolveBindings(true);
+		parser.setBindingsRecovery(true);
+		parser.setSource(fileinfo.getSb().toString().toCharArray());
 
 		try {
 			CompilationUnit unit = (CompilationUnit) parser.createAST(new NullProgressMonitor());
@@ -144,6 +103,7 @@ public class SourceReader {
      */
     class ASTVisitorImpl extends ASTVisitor {
     	private List<Value> statementList = null;
+		private Stack<List<Value>> stack = new Stack<List<Value>>();
     
     	public boolean visit(ClassInstanceCreation node) {
 			String classname = "";
@@ -233,6 +193,9 @@ public class SourceReader {
     		System.out.print(Formatter.format(sourcestr.toString()));
  */
 //			System.out.println(node.getName().getFullyQualifiedName() + "{");
+			if (statementList != null) {
+				stack .push(statementList);
+			}
 			statementList = new ArrayList<Value>();
 		    return super.visit(node);
         }
@@ -240,8 +203,10 @@ public class SourceReader {
 		@Override
 		public void endVisit(MethodDeclaration node) {
 //			System.out.println("}");
-			if (statementList == null)
+			if (statementList == null) {
+				super.endVisit(node);
 				return;
+			}
 
 			final int size = statementList.size();
 			for (int i = 0; i < size - 1; i++) {
@@ -253,7 +218,11 @@ public class SourceReader {
 				}
 			}
 			
-			statementList = null;
+			if (stack.empty()) {
+				statementList = null;
+			} else {
+				statementList = stack.pop();
+			}
 			super.endVisit(node);
 		}
 		

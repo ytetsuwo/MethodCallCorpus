@@ -1,19 +1,13 @@
 package ms.gundam.astparser;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.Stack;
 
 import ms.gundam.astparser.DB;
 import ms.gundam.astparser.Value;
@@ -40,8 +34,10 @@ public class DBReaderMulti {
 	private String myClassname = null;
 	final private static String directory = "/DB/mDB";
 	private DB db;
-
+	private int n = 5;
+	
     class ASTVisitorImpl extends ASTVisitor {
+    	private Stack<List<Value>> stack = new Stack<List<Value>>();
     	private List<Value> statementList = null;
     
     	public boolean visit(ClassInstanceCreation node) {
@@ -67,8 +63,8 @@ public class DBReaderMulti {
     			System.err.println("cannot get type of new statement.");
     			System.exit(1);
     		}
-    		if (statementList != null) {
-    			statementList.add(new Value(classname, "<init>"));
+    		if (getStatementList() != null) {
+    			getStatementList().add(new Value(classname, "<init>"));
     		}
 			return super.visit(node);
     	}
@@ -99,131 +95,62 @@ public class DBReaderMulti {
     		} else {
     			classname = myClassname;
     		}
-    		if (statementList != null) {
-    			statementList.add(new Value(classname, node.getName().toString()));
+    		if (getStatementList() != null) {
+    			getStatementList().add(new Value(classname, node.getName().toString()));
     		}
 			return super.visit(node);
 		}
 
 		@Override
     	public boolean visit(MethodDeclaration node) {
+			if (statementList != null) {
+				stack.push(statementList);
+			}
 			statementList = new ArrayList<Value>();
 		    return super.visit(node);
         }
 
 		@Override
 		public void endVisit(MethodDeclaration node) {
-//			System.out.println("}");
-			if (statementList == null)
-				return;
+			Map<String, ValuewithRanking> proposalmap = new HashMap<String, ValuewithRanking>();
 
-			final int size = statementList.size();
-			for (int i = 0; i < size - 1; i++) {
-				Value statement = statementList.get(i);
-				for (int j = i + 1; j < size; j++) {
-					Value afterStatement = statementList.get(j);
-					db.put(statement.getClassname(), statement.getMethodname(), afterStatement.getClassname(), afterStatement.getMethodname());
-//					System.out.println(statement.getClassname()+"#"+statement.getMethodname()+" "+afterStatement.getClassname()+"#"+afterStatement.getMethodname());
-				}
+			if (getStatementList() == null || getStatementList().size() < 10) {
+				super.endVisit(node);
+				return;
 			}
-			
-			statementList = null;
+			// 先頭からnトークンいれた後にちゃんと候補がでるかしらべる
+			int x = n - 1 < getStatementList().size() ? (n - 1) : (getStatementList().size() - 1); 
+System.out.print(node.getName().getFullyQualifiedName() + "{");
+			for (Value key : getStatementList().subList(0, x)) {
+				makeRanking(key, proposalmap, true);
+			}
+
+			List<ValuewithRanking> proposallist = new ArrayList<ValuewithRanking>();
+			for (ValuewithRanking v: proposalmap.values()) {
+				proposallist.add(v);
+			}
+			Collections.sort(proposallist, new MyComparator());
+			int rank = 1;
+			for (ValuewithRanking v : proposallist) {
+				if (getStatementList().get(x).getClassname().equals(v.getClassname()) &&
+					getStatementList().get(x).getMethodname().equals(v.getMethodname())) {
+System.out.println("\n***BINGO***"+rank+v.getClassname()+v.getMethodname());
+					String str = String.format("%3d(%3d) & %s.%s \\\\", rank, v.getPercentage(), v.getClassname(),v.getMethodname());
+System.out.println(str);
+				}
+				rank++;
+			}
+			if (stack.empty()) {
+				statementList = null;
+			} else {
+				statementList = stack.pop();
+			}
+System.out.println("}");
 			super.endVisit(node);
 		}
-		
-    }
 
-    class MethodVisitor extends ASTVisitor {
-    	private List<Value> beforestatementList = new ArrayList<Value>();
-    	private List<Value> afterstatementList = new ArrayList<Value>();	
-    	private int offset;
-    
-		public MethodVisitor(int offset) {
-			super();
-			this.offset = offset;
-		}
-
-		public List<Value> getBeforeStatementList() {
-			return beforestatementList;
-		}
-
-		public List<Value> getAfterStatementList() {
-			return afterstatementList;
-		}
-
-    	public boolean visit(ClassInstanceCreation node) {
-			String classname = "";
-    		Type classtype = node.getType();
-    		if (classtype != null) {
-    			ITypeBinding type = classtype.resolveBinding();
-    			if (type != null) {
-					if (type.isArray()) {
-						classname = DB.ARRAYNAME;
-					} else {
-						classname = type.getQualifiedName();
-					}
-    			} else {
-    				if (classtype.isSimpleType()) {
-						classname = ((SimpleType)classtype).getName().getFullyQualifiedName();
-    				} else if (classtype.isQualifiedType()) {
-						classname = ((QualifiedType)classtype).getName().getFullyQualifiedName();
-    				} else
-    					;
-    			}
-    		} else {
-    			System.err.println("cannot get type of new statement.");
-    		}
-    		if (offset < node.getStartPosition()) {
-    			if (afterstatementList != null) {
-    				afterstatementList.add(new Value(classname, "<init>"));
-    			}
-    		} else {
-    			if (beforestatementList != null) {
-    				beforestatementList.add(new Value(classname, "<init>"));
-    			}
-    		}
-			return super.visit(node);
-    	}
-
-    	/**
-		 * メソッド呼び出し文を出現順にリストに追加していく
-		 */
-		public boolean visit(MethodInvocation node) {
-			String classname = "";
-    		Expression exp = node.getExpression();
-    		if (exp != null) {
-    			ITypeBinding type = exp.resolveTypeBinding();
-    			if (type != null) {
-					if (type.isArray()) {
-						classname = DB.ARRAYNAME;
-					} else {
-						classname = type.getQualifiedName();
-					}
-    			} else {
-    				if (exp.getNodeType() == ASTNode.SIMPLE_NAME) {
-						classname = ((SimpleName)exp).getIdentifier();
-    					IBinding bind = ((SimpleName)exp).resolveBinding();
-    					if (bind != null) {
-    						System.out.print("@@@");
-    					}
-    				} else if (exp.getNodeType() == ASTNode.QUALIFIED_NAME) {
-						classname = ((QualifiedName)exp).getFullyQualifiedName();
-    				} else
-    					;
-    			}
-    		} else {
-    			classname = myClassname;
-    		}
-    		if (offset < node.getStartPosition()) {
-    			if (afterstatementList != null) {
-    				afterstatementList.add(new Value(classname, node.getName().toString()));
-    			}
-    		} else {
-    			if (beforestatementList != null) {
-    				beforestatementList.add(new Value(classname, node.getName().toString()));
-    			}
-    		}
-			return super.visit(node);
+		public List<Value> getStatementList() {
+			return statementList;
 		}
     }
 
@@ -237,7 +164,7 @@ public class DBReaderMulti {
 		for (Value v: result) {
 			sum += v.getCount();  
 		}
-System.out.println(key.getClassname()+key.getMethodname());			
+//System.out.println(key.getClassname()+key.getMethodname());			
 		/*
 		 * 出現数順にランキングを1位からつける．すでにマップにある場合はランキングを統合する
 		 */
@@ -254,7 +181,7 @@ System.out.println(key.getClassname()+key.getMethodname());
 			newvalue.setRanking(ranking);
 
 			String keyString = newvalue.getClassname()+"#"+newvalue.getMethodname(); 
-System.out.println(newvalue.getRanking()+"("+percentage+"%):"+ keyString);			
+//System.out.println(newvalue.getRanking()+"("+percentage+"%):"+ keyString);			
 
 			if (proposalmap.containsKey(keyString)) {
 				ValuewithRanking value = proposalmap.get(keyString);
@@ -267,101 +194,55 @@ System.out.println(newvalue.getRanking()+"("+percentage+"%):"+ keyString);
 		}
 	}
 	
+	int index = 1;
+    private void regist(final File file) {
+		// ディレクトリの場合
+		if (file.isDirectory()) {
+			File[] subfiles = file.listFiles();
+			for (int i = 0; i < subfiles.length; i++) {
+				regist(subfiles[i]);
+			}
+		}
+
+		// ファイルの場合
+		else if (file.isFile()) {
+			if (file.getName().endsWith(".java")) {
+				System.out.println(index + " Reading " + file.getAbsolutePath() + " . . .");
+				index++;
+				getList(file);
+			}
+		}
+		// ディレクトリでもファイルでもない場合は不正と表示し，無視
+		else {
+			System.err.println(file.getAbsolutePath() + " is invaild");
+		}
+	}
+
 	public static void main(String args[]) {
 		DBReaderMulti m = new DBReaderMulti();
-		m.getList(new File(args[0]));
+		m.db = new DB();
+		m.db.open(new File(directory), true);
+		m.regist(new File(args[0]));
+		m.db.close();
 	}
 
 	private void getList(File file) {
-		db = new DB();
-		db.open(new File(directory), true);
-
-		final long start = System.nanoTime();
-		
-		StringBuffer sb = new StringBuffer();
-		String pathname = null;
-		String packagename = null;
-		final String separator = File.separator.equals("\\") ? "\\\\" : File.separator;
-		try {
-			BufferedReader br;
-			br = new BufferedReader(new InputStreamReader( new FileInputStream(file)));
-			String line;
-			Pattern p = Pattern.compile("package (.*);");
-			boolean matchPackage = false;
-			while ((line = br.readLine()) != null){
-				if (!matchPackage) {
-					Matcher m = p.matcher(line);
-					if (m.matches()) {
-						packagename = m.group(1);
-						Matcher match = Pattern.compile("\\.").matcher(packagename);
-						pathname = match.replaceAll(separator);
-						matchPackage = true;
-					}
-				}
-			  	sb.append(line+"\n");
-			}
-		} catch (FileNotFoundException e) {
-		    System.err.println("File " + file.getAbsolutePath() + " not found.");
-	    	System.exit(1);
-		} catch (IOException e) {
-		    System.err.println("File " + file.getAbsolutePath() + " I/O Error.");
-	    	System.exit(1);
-		}
+		FileAnalyzer fileinfo = new FileAnalyzer();
+		fileinfo.analyze(file);
+		myClassname = fileinfo.getFQDN();
+		String[] sourcepath = fileinfo.getSourcepath();
 
 		ASTParser parser = ASTParser.newParser(AST.JLS4);
-		parser.setResolveBindings(true);
-		parser.setBindingsRecovery(true);
-		Matcher matchpath;
-		if (pathname != null) {
-			String quotepath = java.util.regex.Pattern.quote(pathname);
-			matchpath = Pattern.compile(quotepath+separator+file.getName()).matcher(file.getAbsolutePath());
-		} else {
-			matchpath = Pattern.compile(file.getName()).matcher(file.getAbsolutePath());
-		}
-		String sourcepath[]  = new String[1];
-		sourcepath[0] = matchpath.replaceAll("");
-
-		String classname[] = file.getName().split("\\.java");
-//		Pattern.compile("\\.java$").matcher(file.getName()).replaceFirst("");
-		if (packagename != null)
-			myClassname = packagename + "." +  classname[0];
-		else
-			myClassname = classname[0];
-
 		parser.setEnvironment(null, sourcepath, null, true);
 		parser.setUnitName(file.getName());
-		parser.setSource(sb.toString().toCharArray());
-
+		parser.setResolveBindings(true);
+		parser.setBindingsRecovery(true);
+		parser.setSource(fileinfo.getSb().toString().toCharArray());
+		
 		CompilationUnit unit = (CompilationUnit) parser.createAST(null);
-		MethodVisitor visitor= new MethodVisitor(0);
+		ASTVisitorImpl visitor= new ASTVisitorImpl();
 		unit.accept(visitor);
 
-		Map<String, ValuewithRanking> proposalmap = new HashMap<String, ValuewithRanking>();
-		for (Value key : visitor.getBeforeStatementList()) { 
-			makeRanking(key, proposalmap, true);
-		}
-		for (Value key : visitor.getAfterStatementList()) { 
-			makeRanking(key, proposalmap, false);
-		}
-
-		List<ValuewithRanking> proposallist = new ArrayList<ValuewithRanking>();
-		for (ValuewithRanking v: proposalmap.values()) {
-			proposallist.add(v);
-		}
-		Collections.sort(proposallist, new MyComparator());
-		int rank = 1;
-		for (ValuewithRanking v : proposallist) {
-			if (v.getPercentage() != 0) {
-				String str = String.format("%3d(%3d) & %s.%s \\\\", rank++, v.getPercentage(), v.getClassname(),v.getMethodname());
-System.out.println(str);
-			}
-		}
-
-		final long end = System.nanoTime();
-		final long elapsedTime = end - start;
-		System.out.println("elapsed time: " + elapsedTime / 100000 + " milli seconds.");
-		
-		db.close();
 	}
 }
 
