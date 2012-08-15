@@ -34,10 +34,11 @@ public class DBReaderMulti {
 	private String myClassname = null;
 	final private static String directory = "/DB/mDB";
 	private DB db;
-	private int n = 5;
+	private int ntokens = 5;
 	private List<Integer> oklist = null;
 	private int ngcount = 0;
 	private int ignorecount = 0;
+	private boolean ignoreLowRanking = false;
 	
     class ASTVisitorImpl extends ASTVisitor {
     	private Stack<List<Value>> stack = new Stack<List<Value>>();
@@ -116,14 +117,14 @@ public class DBReaderMulti {
 		@Override
 		public void endVisit(MethodDeclaration node) {
 			Map<String, ValuewithRanking> proposalmap = new HashMap<String, ValuewithRanking>();
-			if (getStatementList() == null || getStatementList().size() < n) {
+			if (getStatementList() == null || getStatementList().size() <= ntokens) {
 				statementList = null;
 				super.endVisit(node);
 				return;
 			}
 
 			// 先頭からnトークンいれた後にちゃんと候補がでるかしらべる
-			int x = n - 1 < getStatementList().size() ? (n - 1) : (getStatementList().size() - 1); 
+			int x = ntokens - 1;// < getStatementList().size() ? (ntokens - 1) : (getStatementList().size() - 1); 
 
 			// 自分と同じクラスは登録してないと出てこないので無視				
 //System.out.println(myClassname.replaceFirst("([^.]*\\.[^.]*\\.).*", "$1"));
@@ -201,8 +202,8 @@ System.out.println("}");
 				ranking++;
 			}
 			int percentage = (int) (v.getCount() * 100 / sum);
-//			if (percentage == 0)
-//				continue;
+			if (percentage == 0 && ignoreLowRanking)
+				continue;
 			ValuewithRanking newvalue = new ValuewithRanking(v);
 			newvalue.setPercentage(percentage);
 			newvalue.setRanking(ranking);
@@ -245,19 +246,38 @@ System.out.println("}");
 		}
 	}
     private void register(final File file) {
-		oklist = new ArrayList<Integer>();
-		ngcount = 0;
-		ignorecount = 0;
-		regist(file);
-		// 上位5位以内にはいる割合を調べたい．
-		int sum = 0;
-		for (int n : oklist) {
-			if (n <= 5) {
-				sum++;
-			}
-		}
-		int divide = oklist.size() == 0 ? 1 : oklist.size(); 
-		System.out.println("OK:(" + oklist.size() + ")("+ sum / divide + ") NG:("+ ngcount + ") IGNORE:(" + ignorecount + ")");
+    	List<Integer> nlist = new ArrayList<Integer>();
+    	nlist.add(5);
+    	nlist.add(10);
+    	nlist.add(15);
+    	for (int ntokens : nlist) {
+    		oklist = new ArrayList<Integer>();
+    		ngcount = 0;
+    		ignorecount = 0;
+    		index = 1;
+    		this.ntokens = ntokens; 
+    		regist(file);
+    		// 上位5位以内にはいる割合を調べたい．
+    		int sum5 = 0;
+    		int sum10 = 0;
+    		int sum15 = 0;
+    		int sum20 = 0;
+    		for (int n : oklist) {
+    			if (n <= 5) {
+    				sum5++;
+    			}
+    			if (n <= 10) {
+    				sum10++;
+    			}
+    			if (n <= 15) {
+    				sum15++;
+    			}
+    			if (n <= 20) {
+    				sum20++;
+    			}
+    		}
+    		System.out.println(ntokens + "tokens OK:(" + oklist.size() + ")("+ sum5+","+sum10+","+sum15 +","+sum20+ ") NG:("+ ngcount + ") IGNORE:(" + ignorecount + ")");
+    	}
     }
 
     public static void main(String args[]) {
