@@ -35,6 +35,9 @@ public class DBReaderMulti {
 	final private static String directory = "/DB/mDB";
 	private DB db;
 	private int n = 5;
+	private List<Integer> oklist = null;
+	private int ngcount = 0;
+	private int ignorecount = 0;
 	
     class ASTVisitorImpl extends ASTVisitor {
     	private Stack<List<Value>> stack = new Stack<List<Value>>();
@@ -129,6 +132,7 @@ System.out.print(node.getName().getFullyQualifiedName() + "{");
 System.out.println(getStatementList().get(x).getClassname() + "." + getStatementList().get(x).getMethodname());
 System.out.println("###NG###,-1,");
 System.out.println("}");
+				ignorecount++;
 				statementList = null;
 				super.endVisit(node);
 				return;
@@ -154,12 +158,14 @@ System.out.println(getStatementList().get(x).getClassname() + "." + getStatement
 System.out.println("***OK***,"+ rank + "," + v.getClassname()+v.getMethodname());
 //					String str = String.format("%3d(%3d) & %s.%s \\\\", rank, v.getPercentage(), v.getClassname(),v.getMethodname());
 //System.out.println(str);
+					oklist.add(rank);
 					flag=true;
 				}
 				rank++;
 			}
 			if (flag == false) {
 System.out.println("@@@NG@@@,0,");
+				ngcount++;
 			}
 			if (stack.empty()) {
 				statementList = null;
@@ -229,8 +235,8 @@ System.out.println("}");
 		else if (file.isFile()) {
 			if (file.getName().endsWith(".java")) {
 				System.out.println(index + " Reading " + file.getAbsolutePath() + " . . .");
-				index++;
 				getList(file);
+				index++;
 			}
 		}
 		// ディレクトリでもファイルでもない場合は不正と表示し，無視
@@ -238,12 +244,27 @@ System.out.println("}");
 			System.err.println(file.getAbsolutePath() + " is invaild");
 		}
 	}
+    private void register(final File file) {
+		oklist = new ArrayList<Integer>();
+		ngcount = 0;
+		ignorecount = 0;
+		regist(file);
+		// 上位5位以内にはいる割合を調べたい．
+		int sum = 0;
+		for (int n : oklist) {
+			if (n <= 5) {
+				sum++;
+			}
+		}
+		int divide = oklist.size() == 0 ? 1 : oklist.size(); 
+		System.out.println("OK:(" + oklist.size() + ")("+ sum / divide + ") NG:("+ ngcount + ") IGNORE:(" + ignorecount + ")");
+    }
 
-	public static void main(String args[]) {
+    public static void main(String args[]) {
 		DBReaderMulti m = new DBReaderMulti();
 		m.db = new DB();
 		m.db.open(new File(directory), true);
-		m.regist(new File(args[0]));
+		m.register(new File(args[0]));
 		m.db.close();
 	}
 
