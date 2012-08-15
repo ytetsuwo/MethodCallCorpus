@@ -195,8 +195,8 @@ System.out.println("}");
 				ranking++;
 			}
 			int percentage = (int) (v.getCount() * 100 / sum);
-			if (percentage == 0)
-				continue;
+//			if (percentage == 0)
+//				continue;
 			ValuewithRanking newvalue = new ValuewithRanking(v);
 			newvalue.setPercentage(percentage);
 			newvalue.setRanking(ranking);
