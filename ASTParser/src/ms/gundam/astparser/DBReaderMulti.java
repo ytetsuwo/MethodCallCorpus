@@ -113,14 +113,23 @@ public class DBReaderMulti {
 		@Override
 		public void endVisit(MethodDeclaration node) {
 			Map<String, ValuewithRanking> proposalmap = new HashMap<String, ValuewithRanking>();
-
-			if (getStatementList() == null || getStatementList().size() < 10) {
+			if (getStatementList() == null || getStatementList().size() < n) {
+				statementList = null;
 				super.endVisit(node);
 				return;
 			}
+
 			// 先頭からnトークンいれた後にちゃんと候補がでるかしらべる
 			int x = n - 1 < getStatementList().size() ? (n - 1) : (getStatementList().size() - 1); 
+
+			if (getStatementList().get(x).getClassname().equals(myClassname)) {
+				statementList = null;
+				super.endVisit(node);
+				return;
+			}
+
 System.out.print(node.getName().getFullyQualifiedName() + "{");
+
 			for (Value key : getStatementList().subList(0, x)) {
 				makeRanking(key, proposalmap, true);
 			}
@@ -131,14 +140,20 @@ System.out.print(node.getName().getFullyQualifiedName() + "{");
 			}
 			Collections.sort(proposallist, new MyComparator());
 			int rank = 1;
+System.out.println(getStatementList().get(x).getClassname() + "." + getStatementList().get(x).getMethodname());
+			boolean flag=false;
 			for (ValuewithRanking v : proposallist) {
 				if (getStatementList().get(x).getClassname().equals(v.getClassname()) &&
 					getStatementList().get(x).getMethodname().equals(v.getMethodname())) {
-System.out.println("\n***BINGO***"+rank+v.getClassname()+v.getMethodname());
+System.out.println("***OK***,"+ rank + "," + v.getClassname()+v.getMethodname());
 					String str = String.format("%3d(%3d) & %s.%s \\\\", rank, v.getPercentage(), v.getClassname(),v.getMethodname());
-System.out.println(str);
+//System.out.println(str);
+					flag=true;
 				}
 				rank++;
+			}
+			if (flag == false) {
+System.out.println("@@@NG@@@,0,");
 			}
 			if (stack.empty()) {
 				statementList = null;
