@@ -32,7 +32,6 @@ import org.eclipse.jdt.core.dom.Type;
 
 public class DBReaderMulti {
 	private String myClassname = null;
-	final private static String directory = "/DB/mDB";
 	private DB db;
 	private int ntokens = 5;
 	private List<Integer> oklist = null;
@@ -123,14 +122,15 @@ public class DBReaderMulti {
 				return;
 			}
 
+System.out.print(node.getName().getFullyQualifiedName() + "{");
+
 			// 先頭からnトークンいれた後にちゃんと候補がでるかしらべる
-			int x = ntokens - 1;// < getStatementList().size() ? (ntokens - 1) : (getStatementList().size() - 1); 
+			//int x = ntokens;// < getStatementList().size() ? (ntokens - 1) : (getStatementList().size() - 1); 
 
 			// 自分と同じクラスは登録してないと出てこないので無視				
 //System.out.println(myClassname.replaceFirst("([^.]*\\.[^.]*\\.).*", "$1"));
-			if (getStatementList().get(x).getClassname().contains(myClassname.replaceFirst("([^.]*\\.[^.]*\\.).*", "$1"))) {
-System.out.print(node.getName().getFullyQualifiedName() + "{");
-System.out.println(getStatementList().get(x).getClassname() + "." + getStatementList().get(x).getMethodname());
+			if (getStatementList().get(ntokens).getClassname().contains(myClassname.replaceFirst("([^.]*\\.[^.]*\\.).*", "$1"))) {
+System.out.println(getStatementList().get(ntokens).getClassname() + "." + getStatementList().get(ntokens).getMethodname());
 System.out.println("###NG###,-1,");
 System.out.println("}");
 				ignorecount++;
@@ -139,9 +139,8 @@ System.out.println("}");
 				return;
 			}
 
-System.out.print(node.getName().getFullyQualifiedName() + "{");
-
-			for (Value key : getStatementList().subList(0, x)) {
+			for (Value key : getStatementList().subList(0, ntokens)) {
+System.out.print(key.getClassname() + "." + key.getMethodname() + " ");
 				makeRanking(key, proposalmap, true);
 			}
 
@@ -151,11 +150,11 @@ System.out.print(node.getName().getFullyQualifiedName() + "{");
 			}
 			Collections.sort(proposallist, new MyComparator());
 			int rank = 1;
-System.out.println(getStatementList().get(x).getClassname() + "." + getStatementList().get(x).getMethodname());
+System.out.println("->" + getStatementList().get(ntokens).getClassname() + "." + getStatementList().get(ntokens).getMethodname());
 			boolean flag=false;
 			for (ValuewithRanking v : proposallist) {
-				if (getStatementList().get(x).getClassname().equals(v.getClassname()) &&
-					getStatementList().get(x).getMethodname().equals(v.getMethodname())) {
+				if (getStatementList().get(ntokens).getClassname().equals(v.getClassname()) &&
+					getStatementList().get(ntokens).getMethodname().equals(v.getMethodname())) {
 System.out.println("***OK***,"+ rank + "," + v.getClassname()+v.getMethodname());
 //					String str = String.format("%3d(%3d) & %s.%s \\\\", rank, v.getPercentage(), v.getClassname(),v.getMethodname());
 //System.out.println(str);
