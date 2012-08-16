@@ -252,7 +252,7 @@ System.out.println("}");
     	nlist.add(15);
     	nlist.add(20);
 //    	for (int ntokens : nlist) {
-    	for (int ntokens = 5; ntokens <= 30; ntokens++) {
+    	for (int ntokens = 1; ntokens <= 30; ntokens++) {
     		oklist = new ArrayList<Integer>();
     		ngcount = 0;
     		ignorecount = 0;
