@@ -22,7 +22,7 @@ public class FileAnalyzer {
 			BufferedReader br;
 			br = new BufferedReader(new InputStreamReader( new FileInputStream(file)));
 			String line;
-			Pattern p = Pattern.compile("package (.*);");
+			Pattern p = Pattern.compile("package ([^\\s]*) *;");
 			boolean matchPackage = false;
 			while ((line = br.readLine()) != null){
 				if (!matchPackage) {
