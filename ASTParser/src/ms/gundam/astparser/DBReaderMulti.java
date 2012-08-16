@@ -140,7 +140,7 @@ System.out.println("}");
 			}
 
 			for (Value key : getStatementList().subList(0, ntokens)) {
-System.out.print(key.getClassname() + "." + key.getMethodname() + " ");
+//System.out.print(key.getClassname() + "." + key.getMethodname() + " ");
 				makeRanking(key, proposalmap, true);
 			}
 
