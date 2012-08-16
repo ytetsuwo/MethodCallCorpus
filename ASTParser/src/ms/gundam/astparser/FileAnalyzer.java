@@ -51,11 +51,21 @@ public class FileAnalyzer {
 			matchpath = Pattern.compile(file.getName()).matcher(file.getAbsolutePath());
 		}
 		sourcepath[0] = matchpath.replaceAll("");
+		// package文と実際のディレクトリ構造があっていなく，うまく変換できない場合，とりあえず親ディレクトリにしておく
+		if (sourcepath[0].equals(file.getAbsolutePath())) {
+			sourcepath[0] = file.getParent();
+			if (sourcepath[0] == null) {
+				sourcepath[0] = "/";
+			}
+		}
 		String classname[] = file.getName().split("\\.java");
-		if (packagename != null)
+		if (packagename != null) {
 			fqdn = packagename + "." +  classname[0];
-		else
+		} else {
 			fqdn = classname[0];
+		}
+		System.out.println(sourcepath[0]);
+
 	}
 
 	public StringBuffer getSb() {
