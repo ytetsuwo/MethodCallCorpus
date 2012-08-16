@@ -164,7 +164,7 @@ System.out.println("***OK***,"+ rank + "," + v.getClassname()+v.getMethodname())
 				rank++;
 			}
 			if (flag == false) {
-System.out.println("@@@NG@@@,0,");
+System.out.println("@@@NG@@@,0,"+getStatementList().get(ntokens).getClassname() + "." + getStatementList().get(ntokens).getMethodname());
 				ngcount++;
 			}
 			if (stack.empty()) {
