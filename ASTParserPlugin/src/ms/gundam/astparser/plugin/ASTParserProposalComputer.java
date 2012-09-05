@@ -243,7 +243,6 @@ System.out.println(newvalue.getRanking()+"("+percentage+"%):"+ keyString);
 		for (ValuewithRanking v: proposalmap.values()) {
 			proposallist.add(v);
 		}
-		Collections.sort(proposallist, new MyComparator());
 		int rank = 1;
 		for (ValuewithRanking v : proposallist) {
 			if (v.getPercentage() != 0) {
@@ -266,16 +265,3 @@ System.out.println(str);
 	}
 
 }
-
-class MyComparator implements Comparator<ValuewithRanking> {  
-	@Override
-	public int compare(ValuewithRanking o1, ValuewithRanking o2) {
-		if (o1.getPercentage() == o2.getPercentage()) {
-			return 0;
-		} else if (o1.getPercentage() > o2.getPercentage()) {
-			return -1;
-		} else {
-			return 1;
-		}
-	}
-}  
