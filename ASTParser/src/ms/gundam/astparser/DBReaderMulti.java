@@ -9,9 +9,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 
-import ms.gundam.astparser.DB;
-import ms.gundam.astparser.Value;
-import ms.gundam.astparser.ValuewithRanking;
+import ms.gundam.astparser.DB.DB;
+import ms.gundam.astparser.DB.Value;
+import ms.gundam.astparser.DB.ValuewithRanking;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
@@ -30,20 +30,56 @@ import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SimpleType;
 import org.eclipse.jdt.core.dom.Type;
 
+/**
+ * 実験データ取得用
+ * 指定したディレクトリ以下にあるすべてのファイルのすべてのメソッドを対象に，
+ * ある地点の後に続く呼び出し文と候補を比べて表示する．
+ * 1からMAXTOKENSまで順番に区切っていき，すべて調べる．
+ * 引数
+ *  一つ目 DBのディレクトリ
+ *  二つ目 解析対象のJavaソースコードのあるディレクトリ
+ */
 public class DBReaderMulti {
+	
+	/** 1からMAXTOKENSまで調べる */
+	private static final int MAXTOKENS = 30;
+
+	/** 解析するクラスのクラス名を保存しておく */
 	private String myClassname = null;
+	
+	/** DB */
 	private DB db;
-	private int ntokens = 5;
+	
+	/** 何トークン目を境にデータを取るか */
+	private int ntokens;
+	
+	/** 候補一覧 */
 	private List<Integer> oklist = null;
+	
+	/** 候補になかった数 */
 	private int ngcount = 0;
+	
+	/** 内部呼び出しの数 */
 	private int ignorecount = 0;
+	
+	/** The ignore low ranking. trueならランキングが小さいのを無視し高速化 */
 	private boolean ignoreLowRanking = false;
 	
+    /**
+     * The Class ASTVisitorImpl.
+     */
     class ASTVisitorImpl extends ASTVisitor {
-    	private Stack<List<Value>> stack = new Stack<List<Value>>();
-    	private List<Value> statementList = null;
+    	
+	    /** The stack. */
+	    private Stack<List<Value>> stack = new Stack<List<Value>>();
+    	
+	    /** The statement list. */
+	    private List<Value> statementList = null;
     
-    	public boolean visit(ClassInstanceCreation node) {
+    	/* (non-Javadoc)
+	     * @see org.eclipse.jdt.core.dom.ASTVisitor#visit(org.eclipse.jdt.core.dom.ClassInstanceCreation)
+	     */
+	    public boolean visit(ClassInstanceCreation node) {
 			String classname = "";
     		Type classtype = node.getType();
     		if (classtype != null) {
@@ -72,6 +108,9 @@ public class DBReaderMulti {
 			return super.visit(node);
     	}
     	
+		/* (non-Javadoc)
+		 * @see org.eclipse.jdt.core.dom.ASTVisitor#visit(org.eclipse.jdt.core.dom.MethodInvocation)
+		 */
 		public boolean visit(MethodInvocation node) {
 			String classname = "";
     		Expression exp = node.getExpression();
@@ -104,6 +143,9 @@ public class DBReaderMulti {
 			return super.visit(node);
 		}
 
+		/* (non-Javadoc)
+		 * @see org.eclipse.jdt.core.dom.ASTVisitor#visit(org.eclipse.jdt.core.dom.MethodDeclaration)
+		 */
 		@Override
     	public boolean visit(MethodDeclaration node) {
 			if (statementList != null) {
@@ -113,6 +155,9 @@ public class DBReaderMulti {
 		    return super.visit(node);
         }
 
+		/* (non-Javadoc)
+		 * @see org.eclipse.jdt.core.dom.ASTVisitor#endVisit(org.eclipse.jdt.core.dom.MethodDeclaration)
+		 */
 		@Override
 		public void endVisit(MethodDeclaration node) {
 			Map<String, ValuewithRanking> proposalmap = new HashMap<String, ValuewithRanking>();
@@ -156,8 +201,6 @@ System.out.println("->" + getStatementList().get(ntokens).getClassname() + "." +
 				if (getStatementList().get(ntokens).getClassname().equals(v.getClassname()) &&
 					getStatementList().get(ntokens).getMethodname().equals(v.getMethodname())) {
 System.out.println("***OK***,"+ rank + "," + v.getClassname()+v.getMethodname());
-//					String str = String.format("%3d(%3d) & %s.%s \\\\", rank, v.getPercentage(), v.getClassname(),v.getMethodname());
-//System.out.println(str);
 					oklist.add(rank);
 					flag=true;
 				}
@@ -176,11 +219,23 @@ System.out.println("}");
 			super.endVisit(node);
 		}
 
+		/**
+		 * Gets the statement list.
+		 *
+		 * @return the statement list
+		 */
 		public List<Value> getStatementList() {
 			return statementList;
 		}
     }
 
+	/**
+	 * Make ranking.
+	 *
+	 * @param key the key
+	 * @param proposalmap the proposalmap
+	 * @param which the which
+	 */
 	private void makeRanking(Value key, Map<String, ValuewithRanking> proposalmap, boolean which) {
 		int ranking = 0;
 		int count = -1;
@@ -221,7 +276,14 @@ System.out.println("}");
 		}
 	}
 	
+	/** The index. */
 	int index = 1;
+    
+    /**
+     * Regist.
+     *
+     * @param file the file
+     */
     private void regist(final File file) {
 		// ディレクトリの場合
 		if (file.isDirectory()) {
@@ -244,14 +306,19 @@ System.out.println("}");
 			System.err.println(file.getAbsolutePath() + " is invaild");
 		}
 	}
+    
+    /**
+     * Register.
+     *
+     * @param file the file
+     */
     private void register(final File file) {
     	List<Integer> nlist = new ArrayList<Integer>();
     	nlist.add(5);
     	nlist.add(10);
     	nlist.add(15);
     	nlist.add(20);
-//    	for (int ntokens : nlist) {
-    	for (int ntokens = 1; ntokens <= 30; ntokens++) {
+    	for (int ntokens = 1; ntokens <= MAXTOKENS; ntokens++) {
     		oklist = new ArrayList<Integer>();
     		ngcount = 0;
     		ignorecount = 0;
@@ -281,6 +348,11 @@ System.out.println("}");
     	}
     }
 
+    /**
+     * The main method.
+     *
+     * @param args the arguments
+     */
     public static void main(String args[]) {
 		DBReaderMulti m = new DBReaderMulti();
 		m.db = new DB();
@@ -289,6 +361,12 @@ System.out.println("}");
 		m.db.close();
 	}
 
+	/**
+	 * Gets the list.
+	 *
+	 * @param file the file
+	 * @return the list
+	 */
 	private void getList(File file) {
 		FileAnalyzer fileinfo = new FileAnalyzer();
 		fileinfo.analyze(file);

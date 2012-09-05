@@ -1,4 +1,4 @@
-package ms.gundam.astparser;
+package ms.gundam.astparser.DB;
 
 import java.io.Serializable;
 

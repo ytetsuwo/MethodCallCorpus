@@ -1,8 +1,10 @@
-package ms.gundam.astparser;
+package ms.gundam.astparser.parser;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import ms.gundam.astparser.token.ATTRIBUTE;
+import ms.gundam.astparser.token.AttributedToken;
 import ms.gundam.astparser.token.Identifier;
 import ms.gundam.astparser.token.Keyword;
 import ms.gundam.astparser.token.Literal;

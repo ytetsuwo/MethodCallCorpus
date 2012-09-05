@@ -1,4 +1,4 @@
-package ms.gundam.astparser;
+package ms.gundam.astparser.parser;
 
 /**
  * トークン文字列の正規化情報格納クラス

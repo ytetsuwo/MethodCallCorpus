@@ -1,4 +1,6 @@
-package ms.gundam.astparser;
+package ms.gundam.astparser.DB;
+
+
 
 public class ValuewithRanking extends Value {
 	private static final long serialVersionUID = 1L;

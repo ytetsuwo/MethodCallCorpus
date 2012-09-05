@@ -1,6 +1,5 @@
-package ms.gundam.astparser;
+package ms.gundam.astparser.token;
 
-import ms.gundam.astparser.token.Token;
 
 public class AttributedToken {
 

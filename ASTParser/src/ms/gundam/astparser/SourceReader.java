@@ -5,6 +5,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
 
+import ms.gundam.astparser.DB.DB;
+import ms.gundam.astparser.DB.Value;
+
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
@@ -24,16 +27,28 @@ import org.eclipse.jdt.core.dom.SimpleType;
 import org.eclipse.jdt.core.dom.Type;
 
 /**
- *  
- * @author tetsuo
+ * コーパスへ登録
+ * 指定したディレクトリ以下にあるすべてのJavaファイルをコーパス化
+ * 引数
+ *  一つ目 DBのディレクトリ
+ *  二つ目 コーパス化するJavaファイルがディレクトリ
  *
  */
 public class SourceReader {
-    //private List<AttributedToken> list = new ArrayList<AttributedToken>();
-	private String myClassname = null; 
+	/** 解析するJavaのクラス名を保存しておく */
+    private String myClassname = null; 
+	
+	/** コーパス */
 	private DB db;
+	
+	/** 解析したJavaファイルの数 */
 	private int index = 1;
 
+    /**
+     * Read.
+     *
+     * @param file the file
+     */
     public void read(File file) {
 		FileAnalyzer fileinfo = new FileAnalyzer();
 		fileinfo.analyze(file);
@@ -56,6 +71,11 @@ public class SourceReader {
 		}
     }
 
+    /**
+     * Regist.
+     *
+     * @param file the file
+     */
     private void regist(final File file) {
 		// ディレクトリの場合
 		if (file.isDirectory()) {
@@ -79,6 +99,11 @@ public class SourceReader {
 		}
 	}
 
+    /**
+     * The main method.
+     *
+     * @param args the arguments
+     */
     public static void main(String args[]) {
     	if (args.length == 0) {
 	    	System.out.println("Specify a source file or directory.");
@@ -86,19 +111,26 @@ public class SourceReader {
     	}
 		SourceReader sr = new SourceReader();
 		sr.db = new DB();
-    	sr.db.open(new File(args[0]), false);
+		sr.db.open(new File(args[0]), false);
 		sr.regist(new File(args[1]));
 		sr.db.close();
     }
 
     /**
-     * VisitorパターンでASTの内容を表示する
+     * VisitorパターンでASTの内容を表示する.
      */
     class ASTVisitorImpl extends ASTVisitor {
-    	private List<Value> statementList = null;
+    	
+	    /** The statement list. */
+	    private List<Value> statementList = null;
+		
+		/** The stack. */
 		private Stack<List<Value>> stack = new Stack<List<Value>>();
     
-    	public boolean visit(ClassInstanceCreation node) {
+    	/* (non-Javadoc)
+	     * @see org.eclipse.jdt.core.dom.ASTVisitor#visit(org.eclipse.jdt.core.dom.ClassInstanceCreation)
+	     */
+	    public boolean visit(ClassInstanceCreation node) {
 			String classname = "";
     		Type classtype = node.getType();
     		if (classtype != null) {
@@ -127,6 +159,9 @@ public class SourceReader {
 			return super.visit(node);
     	}
     	
+		/* (non-Javadoc)
+		 * @see org.eclipse.jdt.core.dom.ASTVisitor#visit(org.eclipse.jdt.core.dom.MethodInvocation)
+		 */
 		public boolean visit(MethodInvocation node) {
 			String classname = "";
     		Expression exp = node.getExpression();
@@ -159,6 +194,9 @@ public class SourceReader {
 			return super.visit(node);
 		}
 
+		/* (non-Javadoc)
+		 * @see org.eclipse.jdt.core.dom.ASTVisitor#visit(org.eclipse.jdt.core.dom.MethodDeclaration)
+		 */
 		@Override
     	public boolean visit(MethodDeclaration node) {
 /*
@@ -193,6 +231,9 @@ public class SourceReader {
 		    return super.visit(node);
         }
 
+		/* (non-Javadoc)
+		 * @see org.eclipse.jdt.core.dom.ASTVisitor#endVisit(org.eclipse.jdt.core.dom.MethodDeclaration)
+		 */
 		@Override
 		public void endVisit(MethodDeclaration node) {
 //			System.out.println("}");

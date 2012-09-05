@@ -1,4 +1,4 @@
-package ms.gundam.astparser;
+package ms.gundam.astparser.token;
 
 public enum ATTRIBUTE {
 
