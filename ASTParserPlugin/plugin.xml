@@ -10,4 +10,12 @@
      	class="ms.gundam.astparser.plugin.ASTParserProposalComputer">
      </javaCompletionProposalComputer>     	
    </extension>
+   <extension
+         id="ms.gundam.astparser.ESCorpusPluginSorter"
+         point="org.eclipse.jdt.ui.javaCompletionProposalSorters">
+     <proposalSorter
+		id="ms.Sorter"
+		name="AST Sorter"
+		class="ms.gundam.astparser.plugin.ASTSorter"/>
+   </extension>
 </plugin>

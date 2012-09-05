@@ -8,9 +8,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import ms.gundam.astparser.DB;
-import ms.gundam.astparser.Value;
-import ms.gundam.astparser.ValuewithRanking;
+import ms.gundam.astparser.DB.DB;
+import ms.gundam.astparser.DB.Value;
+import ms.gundam.astparser.DB.ValuewithRanking;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.jdt.core.ICompilationUnit;
