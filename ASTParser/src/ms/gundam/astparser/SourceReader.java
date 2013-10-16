@@ -3,18 +3,23 @@ package ms.gundam.astparser;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Stack;
 
 import ms.gundam.astparser.DB.DB;
 import ms.gundam.astparser.DB.Value;
 
 import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.AbstractTypeDeclaration;
+import org.eclipse.jdt.core.dom.BodyDeclaration;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.EnumDeclaration;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.IBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
@@ -25,6 +30,7 @@ import org.eclipse.jdt.core.dom.QualifiedType;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SimpleType;
 import org.eclipse.jdt.core.dom.Type;
+import org.eclipse.jdt.core.dom.TypeDeclaration;
 
 /**
  * コーパスへ登録
@@ -61,6 +67,13 @@ public class SourceReader {
 		parser.setResolveBindings(true);
 		parser.setBindingsRecovery(true);
 		parser.setSource(fileinfo.getSb().toString().toCharArray());
+
+		@SuppressWarnings("unchecked")
+		Map<String, String> options = JavaCore.getOptions();
+		options.put(JavaCore.COMPILER_COMPLIANCE, JavaCore.VERSION_1_6);
+		options.put(JavaCore.COMPILER_CODEGEN_TARGET_PLATFORM, JavaCore.VERSION_1_6);
+		options.put(JavaCore.COMPILER_SOURCE, JavaCore.VERSION_1_6);
+		parser.setCompilerOptions(options);
 
 		try {
 			CompilationUnit unit = (CompilationUnit) parser.createAST(new NullProgressMonitor());
@@ -158,7 +171,7 @@ public class SourceReader {
     		}
 			return super.visit(node);
     	}
-    	
+
 		/* (non-Javadoc)
 		 * @see org.eclipse.jdt.core.dom.ASTVisitor#visit(org.eclipse.jdt.core.dom.MethodInvocation)
 		 */
